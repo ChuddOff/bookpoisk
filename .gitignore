@@ -1,0 +1,21 @@
+# общие
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Node/Vite (для FrontEnd, и позже для BackEnd/AI если там будет Node)
+node_modules/
+dist/
+.build/
+.cache/
+
+# env-файлы
+.env
+.env.*
+!.env.example
+
+# редакторы/IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
