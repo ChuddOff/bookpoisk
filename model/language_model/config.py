@@ -1,6 +1,12 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MODEL_URL = os.getenv("MODEL_URL")
+MODEL_KEY = os.getenv("MODEL_KEY")
 MODEL_NAME = "maziyarpanahi/mistral-7b-instruct-v0.3"
-MODEL_URL = "http://localhost:1234/v1"
-MODEL_KEY = ""
 SYSTEM_PROMPT = """Ты — рекомендательная система книг.
     Тебе на вход всегда подаются два списка:
     read_books — список книг, которые пользователь уже прочитал. Каждая книга записана в формате:
