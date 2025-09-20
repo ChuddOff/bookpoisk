@@ -1,0 +1,17 @@
+spring:
+  application:
+    name:postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bookvopoisk
+    username: bookrec
+    password: lovemom0405
+  jpa:
+    hibernate:
+      ddl-auto: update # Hibernate сам создаёт/обновляет таблицы по сущностям
+    properties:
+      hibernate:
+        format_sql: true # true — красиво печатает SQL в логах.
+        jdbc.time_zone: UTC # пишет/читает время в UTC.
+      open-in-view: false # сессия закрывается до контроллера
+server:
+  port: 8080
