@@ -2,9 +2,9 @@ server:
   port: ${PORT:8080}
 spring:
   datasource:
-    url: ${jdbc:postgresql://bookpoisk_user:7doZ5AVgGutm4z6bWpqVbY38IxrkwQeE@dpg-d37dt9hr0fns739e5vdg-a/bookpoisk}
-    username: ${bookre}
-    password: ${lovemom0405}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update # Hibernate сам создаёт/обновляет таблицы по сущностям
