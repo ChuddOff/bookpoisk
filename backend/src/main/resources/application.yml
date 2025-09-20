@@ -1,10 +1,12 @@
+server:
+  port: ${PORT:8080}
 spring:
   application:
-    name:postgres
+    name:bookvopoisk
   datasource:
-    url: jdbc:postgresql://localhost:5432/bookvopoisk
-    username: bookrec
-    password: lovemom0405
+    url: ${jdbc:postgresql://localhost:5432/bookvopoisk}
+    username: ${bookre}
+    password: ${lovemom0405}
   jpa:
     hibernate:
       ddl-auto: update # Hibernate сам создаёт/обновляет таблицы по сущностям
@@ -12,6 +14,4 @@ spring:
       hibernate:
         format_sql: true # true — красиво печатает SQL в логах.
         jdbc.time_zone: UTC # пишет/читает время в UTC.
-      open-in-view: false # сессия закрывается до контроллера
-server:
-  port: 8080
+  open-in-view: false # сессия закрывается до контроллера
