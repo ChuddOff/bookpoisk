@@ -1,39 +1,15 @@
 # Буквапоиск
 
-Монорепозиторий проекта: Web (frontend), API (backend), ai.
+Монорепозиторий:
+- frontend/ — Web (React + Vite) + Telegram Mini App маршруты
+- backend/  — API (заполнит команда бекенда)
+- ai/       — ML/AI (заполнит команда AI)
 
-## Структура
-
-- `frontend/` — React + Vite (веб и Telegram Mini App в одном проекте)
-- `backend/` — (пусто) — команда бэкенда заполняет
-- `ai/` — (пусто) — команда ML/ai заполняет
-
-## Быстрый старт (frontend)
-
-````bash
+## Frontend старт
 cd frontend
 npm i
 npm run dev
-Требования
-Node.js LTS (рекомендуем 22.x через nvm)
 
-WSL2 (если на Windows)
-
-Переменные окружения
-Скопируйте .env.example в .env и заполните значения.
-EOF
-
-yaml
-Копировать код
-
-(Опционально: `LICENSE` — MIT/Apache-2.0, если компания/команда согласна.)
-
----
-
-# 4) .gitattributes (чтобы не путались переносы строк Windows/WSL)
-
-Создай `~/bookpoisk/.gitattributes`:
-
-```gitattributes
-* text=auto eol=lf
-````
+## Требования
+- Node LTS (см. .nvmrc)
+- WSL2 для Windows
