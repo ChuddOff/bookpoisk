@@ -4,7 +4,7 @@
 
 - frontend/ — Web (React + Vite) + Telegram Mini App маршруты
 - backend/ — API (заполнит команда бекенда)
-- ai/ — ML/AI (заполнит команда AI)
+- model/ — LM (заполнит команда LM)
 
 ## Frontend старт
 
@@ -12,6 +12,13 @@
 cd frontend
 npm i
 npm run dev
+```
+
+## Model старт
+```bash
+cd model
+pip install -r requirements.txt
+python3 main.py
 ```
 
 ## Требования

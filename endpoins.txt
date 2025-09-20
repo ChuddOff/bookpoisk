@@ -1,0 +1,52 @@
+Post /login {login: string; password: string}
+Post /register {login: string; password: string}
+
+Get /user {login: string; id: string}
+
+// интерфейс книги 
+book: {
+	id: string;
+	title: string;
+	author: string;
+	year: string;
+	description: string;
+	genre: string;
+	tag?: string[];
+	cover?: string;
+	photos?: string[];
+	pages: number;
+}
+
+user: {
+	login?: string; 
+	password?: string; 
+	id: string;
+}
+
+// все книги
+GET /book (QUERY: page?:string; per_page?:string; search?: string; tags?: string[]; authors?: string[]; years?: string;)
+{data: {
+	data: book[];
+	first: 1
+	items: 30
+	last: 3
+	next: 3
+	page: 2
+	prev: 1
+}}
+
+// избранные книги
+GET /bookForMe (QUERY: page?:string; per_page?:string;)
+{data: {
+	data: book[];
+	first: 1
+	items: 30
+	last: 3
+	next: 3
+	page: 2
+	prev: 1
+}}
+
+// добавить книгу в избранное по его id
+POST /likeBook (QUERY: id: string; // id книги)
+
