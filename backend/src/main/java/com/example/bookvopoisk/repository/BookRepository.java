@@ -18,8 +18,6 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
                or lower(b.author) like lower(concat('%', :q, '%'))
             """) // :q - именованный параметр JPQL, сюда подставляется значение из метода search(@Param("q")
                  // trim(:q) — функция, которая срезает пробелы в начале и в конце строки.
-
-        // Сам запрос Query
     Page<Book> search(@Param("q") String q, Pageable pageable); // Метод, который будет обращаться в базу данных с помощью нашего Query
     /*
      Как работает метод:
