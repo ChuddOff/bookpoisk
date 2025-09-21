@@ -6,3 +6,4 @@ openai~=1.107.2
 jinja2
 dotenv~=0.9.9
 python-dotenv~=1.1.1
+psycopg2
