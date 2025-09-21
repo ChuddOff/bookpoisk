@@ -17,7 +17,6 @@ class Book(BaseModel):
 
 class Request(BaseModel):
     read_books: List[Book]
-    all_books: List[Book]
 
 
 class Response(BaseModel):
