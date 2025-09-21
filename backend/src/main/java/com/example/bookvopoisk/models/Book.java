@@ -29,7 +29,7 @@ public class Book {
     private String author;
 
     @Column
-    private String year;
+    private Integer year;
 
     @Column (columnDefinition = "text") // Без ограничения в 255 символов
     private String description;
@@ -37,17 +37,12 @@ public class Book {
     @Column
     private String genre;
 
-    // Наш массив размажется по базе данных, при этом каждое его значение будет прикреплено к id книги и будет находиться в конкретной строке
-    @ElementCollection // Говорит JPA: поле tags хранится в отдельной таблице как набор простых значений (не сущности) (хранит одна строка = один элемент)
-    @CollectionTable(name = "book_tags", joinColumns = @JoinColumn(name = "book_id")) // Коллекция принадлежит сущности book => по умолчанию ссылается на первичный ключ этой сущности
-    @Column(name = "tag")
-    private List<String> tags = new ArrayList<>();
-
     @Column
     private String cover;
 
-    @ElementCollection
-    @CollectionTable(name = "book_photos", joinColumns = @JoinColumn(name = "book_id"))
+    // Наш массив размажется по базе данных, при этом каждое его значение будет прикреплено к id книги и будет находиться в конкретной строке
+    @ElementCollection // Говорит JPA: поле tags хранится в отдельной таблице как набор простых значений (не сущности) (хранит одна строка = один элемент)
+    @CollectionTable(name = "book_photos", joinColumns = @JoinColumn(name = "book_id")) // Коллекция принадлежит сущности book => по умолчанию ссылается на первичный ключ этой сущности
     @Column(name = "url")
     private List<String> photos = new ArrayList<>();
 
