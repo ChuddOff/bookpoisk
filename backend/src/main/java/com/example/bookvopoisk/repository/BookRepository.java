@@ -3,23 +3,35 @@ package com.example.bookvopoisk.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.example.bookvopoisk.models.Book;
 import java.util.UUID;
 
+// JpaSpecificationExecutor<Book> благодаря ему репозиторий умеет выполнять запросы по спецификациям: методы вроде findAll(Specification<Book> spec, Pageable pageable)
+public interface BookRepository extends JpaRepository<Book, UUID>, JpaSpecificationExecutor<Book> {
 
-public interface BookRepository extends JpaRepository<Book, UUID> {
-    @Query(""" 
-            select b from Book b
-            where (:q is null or trim(:q) = '')
-               or lower(b.title)  like lower(concat('%', :q, '%'))
-               or lower(b.author) like lower(concat('%', :q, '%'))
-            """) // :q - именованный параметр JPQL, сюда подставляется значение из метода search(@Param("q")
-                 // trim(:q) — функция, которая срезает пробелы в начале и в конце строки.
-    Page<Book> search(@Param("q") String q, Pageable pageable); // Метод, который будет обращаться в базу данных с помощью нашего Query
-    /*
+  @Query("""
+        select distinct b.title
+        from Book b
+        where (:prefix is not null and :prefix <> '')
+          and lower(b.title) like lower(concat(:prefix, '%'))
+        order by b.title asc
+    """)
+  Page<String> suggestTitles(@Param("prefix") String prefix, Pageable pageable);
+
+  @Query("""
+        select distinct b.author
+        from Book b
+        where (:prefix is not null and :prefix <> '')
+          and lower(b.author) like lower(concat(:prefix, '%'))
+        order by b.author asc
+    """)
+  Page<String> suggestAuthors(@Param("prefix") String prefix, Pageable pageable);
+
+  /*
      Как работает метод:
      Фронт присылает количество необходимых ему книг и номер страницы.
      Если пагинация 0 => ему отдаются с 1 по 12.
