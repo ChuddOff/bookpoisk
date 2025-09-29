@@ -51,4 +51,3 @@ public class Book {
   @Pattern(regexp = "^\\d+$", message = "Pages must be digits")
   private String pages;
 }
-
