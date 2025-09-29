@@ -2,7 +2,7 @@ export const ENDPOINT = {
   login: "/login",
   register: "/register",
   user: "/user",
-  book: "/book",
+  book: "/books",
   bookForMe: "/bookForMe",
   likeBook: "/likeBook",
 } as const;

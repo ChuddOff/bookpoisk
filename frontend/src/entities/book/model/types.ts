@@ -6,7 +6,6 @@ export interface Book {
   year: string;
   description: string;
   genre: string;
-  tag?: string[];
   cover?: string;
   photos?: string[];
   pages: number;
@@ -23,13 +22,11 @@ export interface PageMeta {
 }
 
 export interface PagedBooksResponse {
-  data: {
-    data: Book[];
-    first: number;
-    items: number;
-    last: number;
-    next: number | null;
-    page: number;
-    prev: number | null;
-  };
+  data: Book[];
+  first: number;
+  items: number;
+  last: number;
+  next: number | null;
+  page: number;
+  prev: number | null;
 }

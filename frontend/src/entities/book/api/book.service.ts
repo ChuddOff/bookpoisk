@@ -8,7 +8,7 @@ export type ListParams = {
   page?: number;
   per_page?: number;
   search?: string;
-  tags?: string[];
+  genres?: string[];
   authors?: string[];
   years?: string;
 };
