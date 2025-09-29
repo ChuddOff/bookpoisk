@@ -9,9 +9,9 @@ import java.util.List;
 public record BookCreateRequest ( // данные присылает фронт для создания книги
   @NotBlank String title,
   @NotBlank String author,
-  @NotNull Integer year,
+  String year,
   String genre,
-  @Positive Integer pages,
+  String pages,
   String description,
   String cover,
   List<String> photos

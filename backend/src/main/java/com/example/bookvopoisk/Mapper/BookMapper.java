@@ -37,8 +37,8 @@ public class BookMapper {
       r.description(), r.cover(), r.photos());
   }
 
-  private static void applyUpdate (Book b, String title, String author, Integer year, //
-                                   String genre, Integer pages, String description,
+  private static void applyUpdate (Book b, String title, String author, String year, //
+                                   String genre, String pages, String description,
                                    String cover, List<String> photos) {
     if (title != null) b.setTitle(title);
     if (author != null) b.setAuthor(author);

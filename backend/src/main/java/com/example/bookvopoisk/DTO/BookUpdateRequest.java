@@ -5,9 +5,9 @@ import java.util.List;
 public record BookUpdateRequest (
   String title,
   String author,
-  Integer year,
+  String year,
   String genre,
-  Integer pages,
+  String pages,
   String description,
   String cover,
   List<String> photos
