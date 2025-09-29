@@ -7,6 +7,7 @@ import com.example.bookvopoisk.specifications.BookSpecifications;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.web.PageableDefault;
@@ -28,13 +29,20 @@ public class BookController {
   /** Каталог: q только по title; авторы/жанры — списки; год — диапазон. */
   @GetMapping("/books")
   public Map<String, Object> list(
-    @RequestParam(required = false) String q,
+    @RequestParam(required = false) String search,
     @RequestParam(required = false) List<String> authors,
     @RequestParam(required = false) List<String> genres,
     @RequestParam(required = false) Integer yearFrom,
     @RequestParam(required = false) Integer yearTo,
     @PageableDefault(size = 12, sort = "title") Pageable pageable
   ) {
+
+    int pageNum  = Math.max(0, pageable.getPageNumber());
+    int pageSize = Math.min(Math.max(1, pageable.getPageSize()), 100);
+    pageable = PageRequest.of(pageNum, pageSize, pageable.getSort());
+
+    String q = (search != null && !search.isBlank()) ? search.trim() : null;
+
     Specification<Book> spec = Specification.allOf(
       BookSpecifications.titleContains(q),
       BookSpecifications.authorInIgnoreCase(authors),
@@ -42,8 +50,13 @@ public class BookController {
       BookSpecifications.yearBetween(yearFrom, yearTo)
     );
 
-    Page<Book> p = repo.findAll(spec, pageable);
-    return PageUtil.toPayload(p);
+    Page<Book> page = repo.findAll(spec, pageable);
+
+    if (page.getTotalElements() > 0 && pageable.getPageNumber() >= page.getTotalPages()) {
+      int last = Math.max(0, page.getTotalPages() - 1);
+      page = repo.findAll(spec, PageRequest.of(last, pageable.getPageSize(), pageable.getSort()));
+    }
+    return PageUtil.toPayload(page);
   }
 
   /** Подсказки по названиям: для строки поиска. */
