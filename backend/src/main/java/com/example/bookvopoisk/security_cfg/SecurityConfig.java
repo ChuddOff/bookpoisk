@@ -13,10 +13,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-public class security_config {
-  @Configuration
-  public class SecurityConfig {
-
+@Configuration
+public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
       http
@@ -49,5 +47,4 @@ public class security_config {
     public PasswordEncoder passwordEncoder() {
       return new BCryptPasswordEncoder();
     }
-  }
 }
