@@ -2,14 +2,14 @@ package com.example.bookvopoisk.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -18,34 +18,37 @@ import java.util.UUID;
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Book {
-    @Id @GeneratedValue(strategy =  GenerationType.UUID)
-    @EqualsAndHashCode.Include // аннотация Lombok, генерирует методы equals() и hashCode()
-    private UUID id;
 
-    @NotBlank @Column (nullable = false)
-    private String title;
+  @Id
+  @UuidGenerator(style = UuidGenerator.Style.RANDOM) // v4-like, неупорядоченно
+  @EqualsAndHashCode.Include
+  @Column(name = "id", columnDefinition = "uuid", updatable = false, nullable = false)
+  private UUID id;
 
-    @NotBlank @Column (nullable = false)
-    private String author;
+  @NotBlank
+  @Column(nullable = false)
+  private String title;
 
-    @Column
-    private Integer year;
+  @NotBlank
+  @Column(nullable = false, columnDefinition = "text")
+  private String author;
 
-    @Column (columnDefinition = "text") // Без ограничения в 255 символов
-    private String description;
+  private String year;
 
-    @Column
-    private String genre;
+  @Column(columnDefinition = "text")
+  private String description;
 
-    @Column
-    private String cover;
+  private String genre;
+  private String cover;
 
-    // Наш массив размажется по базе данных, при этом каждое его значение будет прикреплено к id книги и будет находиться в конкретной строке
-    @ElementCollection // Говорит JPA: поле tags хранится в отдельной таблице как набор простых значений (не сущности) (хранит одна строка = один элемент)
-    @CollectionTable(name = "book_photos", joinColumns = @JoinColumn(name = "book_id")) // Коллекция принадлежит сущности book => по умолчанию ссылается на первичный ключ этой сущности
-    @Column(name = "url")
-    private List<String> photos = new ArrayList<>();
+  @ElementCollection
+  @CollectionTable(name = "book_photos", joinColumns = @JoinColumn(name = "book_id"))
+  @Column(name = "url")
+  private List<String> photos = new ArrayList<>();
 
-    @Positive // Числовое значение больше нуля
-    private Integer pages;
+  // Строка — ок, но сортировка будет лексикографической.
+  // Можно тоже повесить валидатор, если нужны только цифры.
+  @Pattern(regexp = "^\\d+$", message = "Pages must be digits")
+  private String pages;
 }
+
