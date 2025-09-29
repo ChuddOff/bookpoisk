@@ -37,9 +37,9 @@ for row in cur.fetchall():
 # cur.execute("""DELETE FROM books;""")
 # conn.commit()
 
-cur.execute("""SELECT id, title, author, year FROM books""")
+cur.execute("""SELECT id, title, author, year, cover FROM books""")
 for row in cur.fetchall():
-  print(f"Id: {row[0]}, title: {row[1]}, author: {row[2]}, year: {row[3]}")
+  print(f"Id: {row[0]}, title: {row[1]}, author: {row[2]}, year: {row[3]}, cover: {row[4]}")
 
 cur.close()
 conn.close()
