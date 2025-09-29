@@ -1,10 +1,14 @@
 import { Container } from "@/shared/ui/container";
+import { SectionFeed } from "@/widgets/categories/SectionFeed";
 
 export function HomePage() {
   return (
-    <Container className="gap-10">
-      <h1 className="sr-only">Буквапоиск — подбор книг</h1>
-      {/* тут твои секции/карусели и т.д. */}
+    <Container>
+      <div className="space-y-10">
+        {["Фэнтези", "Любовный роман", "Фантастика"].map((t) => (
+          <SectionFeed key={t} title={t} params={{ genres: [t] }} />
+        ))}
+      </div>
     </Container>
   );
 }
