@@ -29,13 +29,13 @@ def load_books_from_json(file_path):
     for item in data:
         books.append({
             "id": str(uuid.uuid4()),
-            "title": item.get("title"),
+            "title": str(item.get("title")).replace("Книга ", "").split(" (")[0],
             "author": item.get("author"),
             "pages": item.get("pages"),
             "year": item.get("year"),
             "genre": item.get("genre"),
             "description": item.get("description"),
-            "cover": item.get("cover")
+            "cover": item.get("cover_url")
         })
     return books
 
