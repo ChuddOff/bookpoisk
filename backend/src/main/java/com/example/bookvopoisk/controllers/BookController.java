@@ -1,5 +1,6 @@
 package com.example.bookvopoisk.controllers;
 
+import com.example.bookvopoisk.DTO.PageUtil;
 import com.example.bookvopoisk.models.Book;
 import com.example.bookvopoisk.repository.BookRepository;
 import com.example.bookvopoisk.specifications.BookSpecifications;
@@ -14,9 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-
-import static org.springframework.data.jpa.domain.Specification.unrestricted;
 
 @RestController
 @RequestMapping
@@ -24,9 +24,10 @@ import static org.springframework.data.jpa.domain.Specification.unrestricted;
 public class BookController {
   private final BookRepository repo;
 
+
   /** Каталог: q только по title; авторы/жанры — списки; год — диапазон. */
   @GetMapping("/books")
-  public Page<Book> list(
+  public Map<String, Object> list(
     @RequestParam(required = false) String q,
     @RequestParam(required = false) List<String> authors,
     @RequestParam(required = false) List<String> genres,
@@ -41,25 +42,28 @@ public class BookController {
       BookSpecifications.yearBetween(yearFrom, yearTo)
     );
 
-    return repo.findAll(spec, pageable);
+    Page<Book> p = repo.findAll(spec, pageable);
+    return PageUtil.toPayload(p);
   }
 
   /** Подсказки по названиям: для строки поиска. */
   @GetMapping("/books/titles/suggest")
-  public Page<String> suggestTitles(
+  public Map<String, Object> suggestTitles(
     @RequestParam String q,
     @PageableDefault(size = 10) Pageable pageable
   ) {
-    return repo.suggestTitles(q.trim(), pageable);
+    Page<String> p = repo.suggestTitles(q.trim(), pageable);
+    return PageUtil.toPayload(p);
   }
 
   /** Подсказки по авторам: для критериев. */
   @GetMapping("/books/authors/suggest")
-  public Page<String> suggestAuthors(
+  public Map<String, Object> suggestAuthors(
     @RequestParam String q,
     @PageableDefault(size = 10) Pageable pageable
   ) {
-    return repo.suggestAuthors(q.trim(), pageable);
+    Page<String> p = repo.suggestAuthors(q.trim(), pageable);
+    return PageUtil.toPayload(p);
   }
 
   @GetMapping("/books/{id}")
