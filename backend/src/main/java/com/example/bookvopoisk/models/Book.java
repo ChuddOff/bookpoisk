@@ -29,7 +29,7 @@ public class Book {
     private String author;
 
     @Column
-    private Integer year;
+    private String year;
 
     @Column (columnDefinition = "text") // Без ограничения в 255 символов
     private String description;
