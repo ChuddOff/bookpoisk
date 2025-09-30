@@ -29,7 +29,7 @@ type Props = React.PropsWithChildren<{
 export function HorizontalCarousel({
   children,
   className,
-  itemWidthClass = "basis-[180px] flex gap-4",
+  itemWidthClass = "max-tablet:basis-[180px] basis-[265px] flex gap-4",
   gapClass = "pr-6", // ⬅ симметричный шаг 20px
   itemGapClass = "", // ⬅ gap между карточками
   outerPadClass = "tablet:px-8",
@@ -45,7 +45,7 @@ export function HorizontalCarousel({
     if (!autoplay) return [];
     return [
       Autoplay({
-        delay: 2500,
+        delay: 3000,
         stopOnInteraction: false, // не отключать навсегда после кликов/драга
         stopOnMouseEnter: true, // стоп при hover
         rootNode: (emblaRoot) => emblaRoot.parentElement!, // шире область наведения
