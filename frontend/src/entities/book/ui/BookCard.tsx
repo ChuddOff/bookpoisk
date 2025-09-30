@@ -25,8 +25,8 @@ export function BookCard({ book, onLiked }: Props) {
   };
 
   return (
-    <Card className="snap-start w-[180px] rounded-xl h-full flex flex-col items-between mx-auto">
-      <div className="flex flex-col">
+    <Card className="snap-start w-full rounded-xl h-full flex flex-col items-between mx-auto">
+      <div className="flex flex-col select-none">
         <div className="p-3">
           <CoverBox src={book.cover} alt={book.title} />
         </div>
@@ -35,14 +35,14 @@ export function BookCard({ book, onLiked }: Props) {
           <CardTitle className="text-sm leading-tight line-clamp-2">
             {book.title}
           </CardTitle>
-          <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+          <div className="mt-1 text-xs text-slate-500 line-clamp-1 mb-0">
             {book.author}
-            {book.year ? `, ${book.year}` : ""}
           </div>
+          <div className="text-xs text-slate-500 line-clamp-1">{book.year}</div>
         </CardHeader>
       </div>
 
-      <CardContent className="mt-auto">
+      <CardContent className="mt-auto  select-none">
         <div className="flex flex-col gap-2 mt-auto">
           {book.genre ? (
             <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ const fallbackDataUri =
 // оставим Skeleton для состояний загрузки:
 export function BookCardSkeleton() {
   return (
-    <Card className="snap-start w-[180px] rounded-xl">
+    <Card className="snap-start w-full rounded-xl">
       <div className="p-3">
         <div className="aspect-[3/4] w-full rounded-lg bg-soft border border-line" />
       </div>
