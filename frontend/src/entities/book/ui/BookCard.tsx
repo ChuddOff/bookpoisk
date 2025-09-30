@@ -35,7 +35,7 @@ export function BookCard({ book, onLiked }: Props) {
           <CardTitle className="text-sm leading-tight line-clamp-2">
             {book.title}
           </CardTitle>
-          <div className="mt-1 text-xs text-slate-500 line-clamp-1 mb-0">
+          <div className="mt-1 text-xs text-slate-500 line-clamp-2 mb-0">
             {book.author}
           </div>
           <div className="text-xs text-slate-500 line-clamp-1">{book.year}</div>
@@ -43,12 +43,18 @@ export function BookCard({ book, onLiked }: Props) {
       </div>
 
       <CardContent className="mt-auto  select-none">
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col items-start gap-6 mt-auto">
           {book.genre ? (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[11px]">
-                {book.genre}
-              </Badge>
+            <div className="flex flex-col gap-2">
+              {book.genre.split(", ").map((genre, i) => (
+                <Badge
+                  variant="secondary"
+                  className="text-[11px] w-fit line-clamp-1"
+                  key={i}
+                >
+                  {genre}
+                </Badge>
+              ))}
             </div>
           ) : null}
           <Button
