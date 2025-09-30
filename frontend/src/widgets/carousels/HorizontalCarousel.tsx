@@ -86,8 +86,8 @@ export function HorizontalCarousel({
           </CarouselContent>
           {controls && (
             <>
-              <CarouselPrevious className="opacity-0 group-hover:opacity-100 tablet:opacity-100 transition-opacity !-left-[35px]" />
-              <CarouselNext className="opacity-0 group-hover:opacity-100 tablet:opacity-100 transition-opacity !-right-[35px]" />
+              <CarouselPrevious className="opacity-0 group-hover:opacity-100 tablet:opacity-100 transition-opacity !-left-[35px] max-tablet:!hidden" />
+              <CarouselNext className="opacity-0 group-hover:opacity-100 tablet:opacity-100 transition-opacity !-right-[35px] max-tablet:!hidden" />
             </>
           )}
         </Carousel>
