@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
-import { Heart, User } from "lucide-react";
+import { Heart, Search, User } from "lucide-react";
 import { Container } from "@/shared";
 
 export function TopBar() {
@@ -13,7 +13,7 @@ export function TopBar() {
             to="/"
             className="text-xl font-extrabold tracking-tight text-ink"
           >
-            Буквапоиск
+            Буквопоиск
           </Link>
 
           <div className="flex items-center gap-3">
@@ -25,7 +25,8 @@ export function TopBar() {
               />
             </div>
             <Button className="tablet:hidden" variant="outline">
-              Поиск
+              <p className="max-xs:hidden">Поиск</p>
+              <Search className="xs:hidden h-4 w-4" />
             </Button>
 
             <Button variant="outline" asChild>
