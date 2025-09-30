@@ -45,7 +45,7 @@ export function HorizontalCarousel({
     if (!autoplay) return [];
     return [
       Autoplay({
-        delay: 2500,
+        delay: 3000,
         stopOnInteraction: false, // не отключать навсегда после кликов/драга
         stopOnMouseEnter: true, // стоп при hover
         rootNode: (emblaRoot) => emblaRoot.parentElement!, // шире область наведения
