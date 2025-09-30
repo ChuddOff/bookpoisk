@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
-import { Heart, Search, User } from "lucide-react";
+import { Book, Heart, Search, User } from "lucide-react";
 import { Container } from "@/shared";
 
 export function TopBar() {
@@ -27,6 +27,19 @@ export function TopBar() {
             <Button className="tablet:hidden" variant="outline">
               <p className="max-xs:hidden">Поиск</p>
               <Search className="xs:hidden h-4 w-4" />
+            </Button>
+
+            <Button variant="outline" asChild>
+              <Link
+                to={
+                  `/catalog?` +
+                  new URLSearchParams({ page: "1", per_page: "12" })
+                }
+                className="flex items-center gap-2"
+              >
+                <Book className="h-4 w-4" />
+                <span className="hidden md:inline">Каталог</span>
+              </Link>
             </Button>
 
             <Button variant="outline" asChild>

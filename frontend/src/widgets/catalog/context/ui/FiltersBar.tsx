@@ -62,6 +62,7 @@ function MultiSelect({
   values = [],
   onToggle,
   onClear,
+  className,
 }: {
   title: string;
   placeholder: string;
@@ -69,13 +70,14 @@ function MultiSelect({
   values?: string[];
   onToggle: (v: string) => void;
   onClear?: () => void;
+  className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const count = values?.length ?? 0;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className={className}>
           {title}
           {count ? ` · ${count}` : ""}
         </Button>
@@ -139,7 +141,7 @@ export function FiltersBar({
     <div
       className={cn(
         "rounded-xl border border-line bg-white p-3",
-        "flex flex-wrap items-center gap-3", // нормальные gaps
+        "flex flex-wrap items-center gap-3 max-sm:flex-col w-full", // нормальные gaps
         className
       )}
     >
@@ -147,46 +149,52 @@ export function FiltersBar({
         placeholder="Поиск: книга, автор, тег…"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
-        className="w-full tablet:w-[360px]"
+        className="w-full sm:w-[360px]"
       />
+      <div className="flex gap-3 flex-1 w-full max-xs:flex-col">
+        <div className="flex gap-3 max-xs:w-full">
+          <MultiSelect
+            title="Годы"
+            placeholder="Найти диапазон…"
+            options={YEARS}
+            values={years}
+            onToggle={(v) => onChange({ years: toggle(years, v) })}
+            onClear={() => onChange({ years: [] })}
+            className="max-xs:flex-1"
+          />
 
-      <MultiSelect
-        title="Годы"
-        placeholder="Найти диапазон…"
-        options={YEARS}
-        values={years}
-        onToggle={(v) => onChange({ years: toggle(years, v) })}
-        onClear={() => onChange({ years: [] })}
-      />
+          <MultiSelect
+            title="Жанры"
+            placeholder="Найти жанр…"
+            options={GENRE}
+            values={genre}
+            onToggle={(v) => onChange({ genre: toggle(genre, v) })}
+            onClear={() => onChange({ genre: [] })}
+            className="max-xs:flex-1"
+          />
 
-      <MultiSelect
-        title="Жанры"
-        placeholder="Найти жанр…"
-        options={GENRE}
-        values={genre}
-        onToggle={(v) => onChange({ genre: toggle(genre, v) })}
-        onClear={() => onChange({ genre: [] })}
-      />
+          <MultiSelect
+            title="Страницы"
+            placeholder="Найти диапазон…"
+            options={PAGES}
+            values={pages}
+            onToggle={(v) => onChange({ pages: toggle(pages, v) })}
+            onClear={() => onChange({ pages: [] })}
+            className="max-xs:flex-1"
+          />
+        </div>
 
-      <MultiSelect
-        title="Страницы"
-        placeholder="Найти диапазон…"
-        options={PAGES}
-        values={pages}
-        onToggle={(v) => onChange({ pages: toggle(pages, v) })}
-        onClear={() => onChange({ pages: [] })}
-      />
-
-      <Button
-        variant="ghost"
-        className="ml-auto"
-        onClick={() => {
-          setLocal("");
-          onChange({ search: "", years: [], genre: [], pages: [] });
-        }}
-      >
-        Сбросить
-      </Button>
+        <Button
+          variant="ghost"
+          className="ml-auto"
+          onClick={() => {
+            setLocal("");
+            onChange({ search: "", years: [], genre: [], pages: [] });
+          }}
+        >
+          Сбросить
+        </Button>
+      </div>
     </div>
   );
 }

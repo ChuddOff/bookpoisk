@@ -34,7 +34,7 @@ function CatalogInner() {
   console.log(pageData);
 
   return (
-    <Container className="flex flex-col gap-[24px]">
+    <Container className="flex flex-col gap-[24px] max-md:gap-3">
       <FiltersBar
         search={search}
         years={years}
