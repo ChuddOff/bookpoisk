@@ -29,7 +29,7 @@ type Props = React.PropsWithChildren<{
 export function HorizontalCarousel({
   children,
   className,
-  itemWidthClass = "basis-[180px] flex gap-4",
+  itemWidthClass = "max-tablet:basis-[180px] basis-[265px] flex gap-4",
   gapClass = "pr-6", // ⬅ симметричный шаг 20px
   itemGapClass = "", // ⬅ gap между карточками
   outerPadClass = "tablet:px-8",
