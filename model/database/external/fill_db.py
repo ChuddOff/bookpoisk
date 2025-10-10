@@ -44,7 +44,7 @@ def insert_books(books):
     conn = get_connection()
     with conn:
         with conn.cursor() as cur:
-            for book in books[:50]:
+            for book in books[:5000]:
                 try:
                     cur.execute(
                         "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
