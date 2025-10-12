@@ -13,14 +13,14 @@ import { PaginationBar } from "@/widgets/catalog/context/ui/PaginationBar";
 function CatalogInner() {
   const {
     search,
-    genres,
-    years,
+    year,
+    genre,
     pages,
-    page,
     setSearch,
-    setgenres,
-    setYears,
+    setYear,
+    setGenre,
     setPages,
+    page,
     setPage,
     toApiParams,
   } = usePagination();
@@ -37,14 +37,14 @@ function CatalogInner() {
     <Container className="flex flex-col gap-[24px] max-md:gap-3">
       <FiltersBar
         search={search}
-        years={years}
-        genre={genres}
+        year={year}
+        genre={genre}
         pages={pages}
         onChange={(n) => {
-          if (n.search !== undefined) setSearch(n.search);
-          if (n.years !== undefined) setYears(n.years);
-          if (n.genre !== undefined) setgenres(n.genre);
-          if (n.pages !== undefined) setPages(n.pages);
+          if ("search" in n) setSearch(n.search);
+          if ("year" in n) setYear(n.year);
+          if ("genre" in n) setGenre(n.genre);
+          if ("pages" in n) setPages(n.pages);
         }}
       />
 

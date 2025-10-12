@@ -9,3 +9,4 @@ export * from "./dialog";
 export * from "./sheet";
 export * from "./container";
 export * from "./sonner";
+export * from "./CustomLightbox";

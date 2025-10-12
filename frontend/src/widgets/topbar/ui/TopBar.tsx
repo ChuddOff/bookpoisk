@@ -24,12 +24,15 @@ export function TopBar() {
                 className="w-[380px]"
               />
             </div>
-            <Button className="tablet:hidden" variant="outline">
+            <Button
+              className="tablet:hidden max-md:px-[11px]"
+              variant="outline"
+            >
               <p className="max-xs:hidden">Поиск</p>
               <Search className="xs:hidden h-4 w-4" />
             </Button>
 
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="max-md:px-[11px]">
               <Link
                 to={
                   `/catalog?` +
@@ -42,14 +45,14 @@ export function TopBar() {
               </Link>
             </Button>
 
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="max-md:px-[11px]">
               <Link to="/favorites" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" />
                 <span className="hidden md:inline">Избранное</span>
               </Link>
             </Button>
 
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="max-md:px-[11px]">
               <Link to="/profile" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden md:inline">Кабинет</span>

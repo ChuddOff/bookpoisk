@@ -3,8 +3,10 @@ export const QUERY_PARAMS = {
   per_page: "per_page",
   search: "search",
   authors: "authors",
-  years: "years",
-  genre: "genre",
+  yearFrom: "yearFrom",
+  yearTo: "yearTo",
+  pageFrom: "pageFrom",
+  pageTo: "pageTo",
 } as const;
 
 export type QueryParamKey = (typeof QUERY_PARAMS)[keyof typeof QUERY_PARAMS];
