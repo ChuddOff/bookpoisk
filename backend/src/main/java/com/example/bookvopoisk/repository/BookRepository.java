@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.example.bookvopoisk.models.Book;
+
+import java.util.List;
 import java.util.UUID;
 
 // JpaSpecificationExecutor<Book> благодаря ему репозиторий умеет выполнять запросы по спецификациям: методы вроде findAll(Specification<Book> spec, Pageable pageable)
@@ -17,7 +19,7 @@ public interface BookRepository extends JpaRepository<Book, UUID>, JpaSpecificat
         select distinct b.title
         from Book b
         where (:prefix is not null and :prefix <> '')
-          and lower(b.title) like lower(concat(:prefix, '%'))
+          and lower(trim(b.title)) like lower(concat(:prefix, '%'))
         order by b.title asc
     """)
   Page<String> suggestTitles(@Param("prefix") String prefix, Pageable pageable);
@@ -26,10 +28,18 @@ public interface BookRepository extends JpaRepository<Book, UUID>, JpaSpecificat
         select distinct b.author
         from Book b
         where (:prefix is not null and :prefix <> '')
-          and lower(b.author) like lower(concat(:prefix, '%'))
+          and lower(trim(b.author)) like lower(concat(:prefix, '%'))
         order by b.author asc
     """)
   Page<String> suggestAuthors(@Param("prefix") String prefix, Pageable pageable);
+
+  @Query("""
+        select distinct trim(b.genre)
+        from Book b
+        where b.genre is not null and b.genre <> ''
+        order by trim(b.genre) asc
+  """)
+  List<String> findAllGenres();
 
   /*
      Как работает метод:

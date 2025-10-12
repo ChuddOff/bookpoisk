@@ -1,6 +1,7 @@
 package com.example.bookvopoisk.specifications;
 
 import com.example.bookvopoisk.models.Book;
+import jakarta.persistence.criteria.Path;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collection;
@@ -44,13 +45,25 @@ public class BookSpecifications { // Фабрика кусочков Where, ко
   }
 
   /** Год в диапазоне [from, to] (любой из краёв может отсутствовать). */
-  public static Specification<Book> yearBetween(Integer from, Integer to) {
+  public static Specification<Book> yearBetween(Integer yearFrom, Integer yearTo) {
     return (root, cq, cb) -> {
-      if (from == null && to == null) return null;
-      if (from != null && to != null) return cb.between(root.get("year"), from, to);
-      return (from != null)
-        ? cb.greaterThanOrEqualTo(root.get("year"), from)
-        : cb.lessThanOrEqualTo(root.get("year"), to);
+      Path<Integer> years = root.get("year");
+      if (yearFrom == null && yearTo == null) return null;
+      if (yearFrom != null && yearTo != null) return cb.between(years, yearFrom, yearTo);
+      return (yearFrom != null)
+        ? cb.greaterThanOrEqualTo(years, yearFrom)
+        : cb.lessThanOrEqualTo(years, yearTo);
+    };
+  }
+
+  /** Страницы в диапазоне [from, to] (любой из краёв может отсутствовать). */
+  public static Specification<Book> pageBetween(Integer pageFrom, Integer pageTo) {
+    return (root, cq, cb) -> {
+      Path<Integer> pages = root.get("pages");
+      if (pageFrom == null && pageTo == null) return null;
+      if (pageFrom == null) return cb.lessThanOrEqualTo(pages, pageTo);
+      if (pageTo == null) return cb.greaterThanOrEqualTo(pages, pageFrom);
+      return cb.between(pages, pageFrom, pageTo);
     };
   }
 }
