@@ -1,8 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
-import { HomePage } from "@/pages/home";
-import { TmaHomePage } from "@/pages/tma";
+
+import { BookPage, CatalogPage, HomePage, TmaHomePage } from "@/pages";
 import { TmaLayout, WebLayout } from "./layouts";
-import { CatalogPage } from "@/pages/catalog";
 
 export const router = createBrowserRouter(
   [
@@ -11,12 +10,17 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <HomePage /> },
         { path: "catalog", element: <CatalogPage /> },
+        { path: "book/:id", element: <BookPage /> },
       ],
     },
     {
       path: "/tma",
       element: <TmaLayout />,
-      children: [{ index: true, element: <TmaHomePage /> }],
+      children: [
+        { index: true, element: <TmaHomePage /> },
+        { path: "catalog", element: <CatalogPage /> },
+        { path: "book/:id", element: <BookPage /> },
+      ],
     },
   ],
   {

@@ -1,4 +1,4 @@
-import { SectionFeed } from "@/widgets/categories/SectionFeed";
+import { SectionFeed } from "@/widgets/categories";
 
 export function TmaHomePage() {
   return (

@@ -1,26 +1,26 @@
-import { Container } from "@/shared/ui/container";
+import { AlertTriangle } from "lucide-react";
+
+import { useBooks } from "@/entities/book";
 import {
+  BookGrid,
+  FiltersBar,
+  PaginationBar,
   PaginationProvider,
   usePagination,
-} from "@/widgets/catalog/context/pagination-context";
-import { useBooks } from "@/entities/book/api";
-import { Button } from "@/shared/ui/button";
-import { AlertTriangle } from "lucide-react";
-import { FiltersBar } from "@/widgets/catalog/context/ui/FiltersBar";
-import { BookGrid } from "@/widgets/catalog/context/ui/BookGrid";
-import { PaginationBar } from "@/widgets/catalog/context/ui/PaginationBar";
+} from "@/widgets/catalog";
+import { Button, Container } from "@/shared/ui";
 
 function CatalogInner() {
   const {
     search,
+    year,
     genres,
-    years,
     pages,
-    page,
     setSearch,
-    setgenres,
-    setYears,
+    setYear,
+    setGenres,
     setPages,
+    page,
     setPage,
     toApiParams,
   } = usePagination();
@@ -37,14 +37,14 @@ function CatalogInner() {
     <Container className="flex flex-col gap-[24px] max-md:gap-3">
       <FiltersBar
         search={search}
-        years={years}
-        genre={genres}
+        year={year}
+        genres={genres}
         pages={pages}
         onChange={(n) => {
-          if (n.search !== undefined) setSearch(n.search);
-          if (n.years !== undefined) setYears(n.years);
-          if (n.genre !== undefined) setgenres(n.genre);
-          if (n.pages !== undefined) setPages(n.pages);
+          if ("search" in n) setSearch(n.search);
+          if ("year" in n) setYear(n.year);
+          if ("genres" in n) setGenres(n.genres);
+          if ("pages" in n) setPages(n.pages);
         }}
       />
 

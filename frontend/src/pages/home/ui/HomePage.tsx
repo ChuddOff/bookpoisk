@@ -1,5 +1,5 @@
-import { Container } from "@/shared/ui/container";
-import { SectionFeed } from "@/widgets/categories/SectionFeed";
+import { Container } from "@/shared/ui";
+import { SectionFeed } from "@/widgets/categories";
 
 export function HomePage() {
   return (

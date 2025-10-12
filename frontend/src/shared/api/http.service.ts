@@ -1,6 +1,6 @@
 // src/shared/api/http.service.ts
-import { env } from "@/shared/config/env";
-import { toQueryString, type Query } from "@/shared/lib/query";
+import { env } from "@/shared/config";
+import { toQueryString, type Query } from "@/shared/lib";
 
 export class HttpError extends Error {
   status: number;

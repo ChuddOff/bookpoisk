@@ -2,8 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { RouterProvider } from "react-router-dom";
-import { SWRProvider } from "@/app/providers/SWRProvider";
-import { AppToaster } from "@/shared/ui/sonner";
+import { SWRProvider } from "@/app/providers";
+import { AppToaster } from "@/shared/ui";
 import { router } from "./app/router";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

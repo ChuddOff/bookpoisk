@@ -1,31 +1,21 @@
 import * as React from "react";
-import type { Book } from "@/entities/book/model/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
-import { Heart } from "lucide-react";
-import { useLikeBook } from "@/entities/book/api";
-import { toast } from "@/shared/ui/sonner";
+
+import type { Book } from "@/entities/book";
+import { LikeButton } from "@/features/favorites";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 
 type Props = { book: Book; onLiked?: (id: string) => void };
 
-export function BookCard({ book, onLiked }: Props) {
-  const { trigger, isMutating } = useLikeBook();
+export function BookCard({ book }: Props) {
   const [liked, setLiked] = React.useState(false);
 
-  const handleLike = async () => {
-    try {
-      await trigger(book.id); // POST /likeBook?id=...
-      setLiked(true);
-      onLiked?.(book.id);
-      toast.success("Добавлено в избранное", { description: book.title });
-    } catch (e: any) {
-      toast.error("Не удалось добавить", { description: e?.message });
-    }
-  };
-
   return (
-    <Card className="snap-start w-full rounded-xl h-full flex flex-col items-between mx-auto">
+    <Card
+      className="snap-start w-full rounded-xl h-full flex flex-col items-between mx-auto cursor-pointer"
+      onClick={() => {
+        window.location.href = `/book/${book.id}`;
+      }}
+    >
       <div className="flex flex-col select-none">
         <div className="p-3">
           <CoverBox src={book.cover} alt={book.title} />
@@ -57,17 +47,7 @@ export function BookCard({ book, onLiked }: Props) {
               ))}
             </div>
           ) : null}
-          <Button
-            size="sm"
-            variant={liked ? "default" : "outline"}
-            onClick={handleLike}
-            disabled={isMutating || liked}
-            className="h-8 px-3 w-full"
-            title="В избранное"
-          >
-            <Heart className="h-4 w-4 mr-1" />
-            {liked ? "В избранном" : "Лайк"}
-          </Button>
+          <LikeButton id={book.id} liked={liked} onLikedChange={setLiked} />
         </div>
       </CardContent>
     </Card>
