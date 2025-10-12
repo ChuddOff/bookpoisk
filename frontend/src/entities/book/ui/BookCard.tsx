@@ -1,8 +1,8 @@
 import * as React from "react";
-import type { Book } from "@/entities/book/model/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { LikeButton } from "@/features/favorites/ui/LikeButton";
+
+import type { Book } from "@/entities/book";
+import { LikeButton } from "@/features/favorites";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 
 type Props = { book: Book; onLiked?: (id: string) => void };
 

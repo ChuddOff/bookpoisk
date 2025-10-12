@@ -1,7 +1,8 @@
 // src/features/favorites/api/useLikeBook.ts
 import { useSWRConfig } from "swr";
-import { toast } from "@/shared/ui/sonner";
-import { bookService } from "@/entities/book/api/book.service"; // твой инстанс сервиса
+
+import { bookService } from "@/entities/book"; // твой инстанс сервиса
+import { toast } from "@/shared/ui";
 
 /**
  * Возвращает обычную функцию (id) => Promise<void>,

@@ -1,17 +1,20 @@
 import * as React from "react";
-import { cn } from "@/shared/ui/cn";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
+import { Check, X } from "lucide-react";
+
 import {
+  Button,
+  Checkbox,
   Command,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/shared/ui/command";
-import { Checkbox } from "@/shared/ui/checkbox";
-import { Check, X } from "lucide-react";
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  cn,
+} from "@/shared/ui";
 
 // те же наборы опций, что в контексте
 const YEARS = [

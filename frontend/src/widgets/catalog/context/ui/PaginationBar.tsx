@@ -1,4 +1,4 @@
-import { PaginationList } from "@/features/pagination/ui/PaginationList";
+import { PaginationList } from "@/features/pagination";
 
 export function PaginationBar({
   page,

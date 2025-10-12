@@ -1,5 +1,4 @@
-import { BookCard, BookCardSkeleton } from "@/entities/book/ui/BookCard";
-import type { Book } from "@/entities/book/model/types";
+import { BookCard, BookCardSkeleton, type Book } from "@/entities/book";
 
 export function BookGrid({
   items,

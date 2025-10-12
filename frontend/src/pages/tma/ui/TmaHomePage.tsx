@@ -1,4 +1,4 @@
-import { SectionFeed } from "@/widgets/categories/SectionFeed";
+import { SectionFeed } from "@/widgets/categories";
 
 export function TmaHomePage() {
   return (
@@ -6,7 +6,7 @@ export function TmaHomePage() {
       <h1 className="text-lg font-semibold">Буквапоиск — Mini App</h1>
       <SectionFeed
         title="Новинки"
-        params={{ genres: ["new"] }}
+        params={{ genre: ["new"] }}
         moreHref="/tma/catalog"
       />
     </div>

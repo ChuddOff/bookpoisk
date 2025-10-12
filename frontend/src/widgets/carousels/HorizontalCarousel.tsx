@@ -1,13 +1,14 @@
 // src/widgets/carousels/HorizontalCarousel.tsx
 import * as React from "react";
-import { cn } from "@/shared/ui/cn";
+
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/shared/ui/carousel";
+  cn,
+} from "@/shared/ui";
 import Autoplay from "embla-carousel-autoplay";
 
 type Props = React.PropsWithChildren<{

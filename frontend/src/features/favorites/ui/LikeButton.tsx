@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Button } from "@/shared/ui/button";
+
+import { useLikeBook } from "@/entities/book";
+import { Button, cn } from "@/shared/ui";
 import { Heart, Loader2 } from "lucide-react";
-import { cn } from "@/shared/ui/cn";
-import { useLikeBook } from "@/entities/book/api";
 
 type Props = {
   id: string;

@@ -1,11 +1,10 @@
 import * as React from "react";
-import { useParams, Link } from "react-router-dom";
-import { Container } from "@/shared/ui/container";
-import { Button } from "@/shared/ui/button";
-import { useBook } from "@/entities/book/api/swr/useBook";
-import { SectionFeed } from "@/widgets/categories/SectionFeed";
-import { CustomLightbox } from "@/shared";
-import { LikeButton } from "@/features/favorites/ui/LikeButton";
+import { Link, useParams } from "react-router-dom";
+
+import { useBook } from "@/entities/book";
+import { LikeButton } from "@/features/favorites";
+import { SectionFeed } from "@/widgets/categories";
+import { Button, Container, CustomLightbox } from "@/shared/ui";
 
 /** Локальный скелетон без зависимостей */
 function BlockSkeleton({ className = "" }: { className?: string }) {

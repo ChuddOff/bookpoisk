@@ -1,14 +1,14 @@
-import { Container } from "@/shared/ui/container";
+import { AlertTriangle } from "lucide-react";
+
+import { useBooks } from "@/entities/book";
 import {
+  BookGrid,
+  FiltersBar,
+  PaginationBar,
   PaginationProvider,
   usePagination,
-} from "@/widgets/catalog/context/pagination-context";
-import { useBooks } from "@/entities/book/api";
-import { Button } from "@/shared/ui/button";
-import { AlertTriangle } from "lucide-react";
-import { FiltersBar } from "@/widgets/catalog/context/ui/FiltersBar";
-import { BookGrid } from "@/widgets/catalog/context/ui/BookGrid";
-import { PaginationBar } from "@/widgets/catalog/context/ui/PaginationBar";
+} from "@/widgets/catalog";
+import { Button, Container } from "@/shared/ui";
 
 function CatalogInner() {
   const {

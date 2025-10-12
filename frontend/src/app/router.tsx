@@ -1,9 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
-import { HomePage } from "@/pages/home";
-import { TmaHomePage } from "@/pages/tma";
+
+import { BookPage, CatalogPage, HomePage, TmaHomePage } from "@/pages";
 import { TmaLayout, WebLayout } from "./layouts";
-import { CatalogPage } from "@/pages/catalog";
-import { BookPage } from "@/pages/book/ui/BookPage";
 
 export const router = createBrowserRouter(
   [
