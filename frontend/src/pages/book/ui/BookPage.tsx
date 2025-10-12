@@ -144,8 +144,9 @@ export function BookPage() {
       {genres[0] && (
         <SectionFeed
           title={`Похожие в жанре «${genres[0]}»`}
-          params={{ page: 1, per_page: 10, genre: [genres[0]] }}
-          moreHref={`/catalog?genre=${encodeURIComponent(genres[0])}`}
+          params={{ page: 1, per_page: 10, genres: [genres[0]] }}
+          moreHref={`/catalog?genres=${encodeURIComponent(genres[0])}`}
+          className="mt-3"
         />
       )}
 
