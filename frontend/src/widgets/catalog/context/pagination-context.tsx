@@ -75,7 +75,7 @@ export type QueryState = {
   per_page: number; // фикс 12
   search?: string;
   authors?: string[];
-  genre?: string[]; // мультивыбор жанров
+  genres?: string[]; // мультивыбор жанров
   year?: string; // одиночный токен из YEAR_OPTIONS.value
   pages?: string; // одиночный токен из PAGES_OPTIONS.value
 };
@@ -84,7 +84,7 @@ export type PaginationActions = {
   setPage: (p: number) => void;
   setSearch: (s?: string) => void;
   setAuthors: (a?: string[]) => void;
-  setGenre: (g?: string[]) => void;
+  setGenres: (g?: string[]) => void;
   setYear: (v?: string) => void;
   setPages: (v?: string) => void;
   reset: () => void;
@@ -113,7 +113,7 @@ function fromSearchParams(sp: URLSearchParams): QueryState {
     per_page: 12,
     search: sp.get(QUERY_PARAMS.search) ?? undefined,
     authors: sp.get(QUERY_PARAMS.authors)?.split(",").filter(Boolean),
-    genre: sp.get("genre")?.split(",").filter(Boolean),
+    genres: sp.get("genres")?.split(",").filter(Boolean),
     year: yearValueFromPair(yearFrom, yearTo),
     pages: pagesValueFromPair(pageFrom, pageTo), // ⬅️ используем пары page*
   };
@@ -126,7 +126,7 @@ function toSearchParams(state: QueryState): URLSearchParams {
   if (state.search) sp.set(QUERY_PARAMS.search, state.search);
   if (state.authors?.length)
     sp.set(QUERY_PARAMS.authors, state.authors.join(","));
-  if (state.genre?.length) sp.set("genre", state.genre.join(","));
+  if (state.genres?.length) sp.set("genres", state.genres.join(","));
 
   const yp = yearPairFromValue(state.year);
   if (yp.from != null) sp.set("yearFrom", String(yp.from));
@@ -185,14 +185,14 @@ export function PaginationProvider({
     setPage: (p) => update({ page: Math.max(1, p) }, { keepPage: true }),
     setSearch: (s) => update({ search: s }),
     setAuthors: (a) => update({ authors: a }),
-    setGenre: (g) => update({ genre: g }),
+    setGenres: (g) => update({ genres: g }),
     setYear: (v) => update({ year: v }),
     setPages: (v) => update({ pages: v }),
     reset: () =>
       update({
         search: undefined,
         authors: [],
-        genre: [],
+        genres: [],
         year: undefined,
         pages: undefined,
       }),
@@ -204,7 +204,7 @@ export function PaginationProvider({
         per_page: 12,
         search: state.search,
         authors: state.authors,
-        genre: state.genre,
+        genres: state.genres,
         yearFrom: yp.from,
         yearTo: yp.to,
         pageFrom: pp.from,

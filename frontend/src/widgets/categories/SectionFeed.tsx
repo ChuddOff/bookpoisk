@@ -27,7 +27,7 @@ export function SectionFeed({ title, params, moreHref = "/catalog" }: Props) {
         <Button variant="outline" asChild>
           <a
             href={`${moreHref}?${new URLSearchParams({
-              genre: params.genre?.join(",") ?? "",
+              genres: params.genres?.join(",") ?? "",
               page: "1",
               per_page: "12",
             }).toString()}`}

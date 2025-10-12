@@ -14,11 +14,11 @@ function CatalogInner() {
   const {
     search,
     year,
-    genre,
+    genres,
     pages,
     setSearch,
     setYear,
-    setGenre,
+    setGenres,
     setPages,
     page,
     setPage,
@@ -38,12 +38,12 @@ function CatalogInner() {
       <FiltersBar
         search={search}
         year={year}
-        genre={genre}
+        genres={genres}
         pages={pages}
         onChange={(n) => {
           if ("search" in n) setSearch(n.search);
           if ("year" in n) setYear(n.year);
-          if ("genre" in n) setGenre(n.genre);
+          if ("genres" in n) setGenres(n.genres);
           if ("pages" in n) setPages(n.pages);
         }}
       />

@@ -6,7 +6,7 @@ export function TmaHomePage() {
       <h1 className="text-lg font-semibold">Буквапоиск — Mini App</h1>
       <SectionFeed
         title="Новинки"
-        params={{ genre: ["new"] }}
+        params={{ genres: ["new"] }}
         moreHref="/tma/catalog"
       />
     </div>

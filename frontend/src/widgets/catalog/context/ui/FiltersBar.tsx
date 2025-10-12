@@ -41,13 +41,13 @@ const PAGES = [
 type Props = {
   search?: string;
   year?: string; // одиночный токен
-  genre?: string[]; // мульти
+  genres?: string[]; // мульти
   pages?: string; // одиночный токен
   onChange: (
     next: Partial<{
       search: string;
       year: string | undefined;
-      genre: string[];
+      genres: string[];
       pages: string | undefined;
     }>
   ) => void;
@@ -182,7 +182,7 @@ function SingleSelect({
 export function FiltersBar({
   search,
   year,
-  genre,
+  genres,
   pages,
   onChange,
   className,
@@ -230,9 +230,9 @@ export function FiltersBar({
           title="Жанры"
           placeholder="Найти жанр…"
           options={GENRE}
-          values={genre}
-          onToggle={(v) => onChange({ genre: toggle(genre, v) })}
-          onClear={() => onChange({ genre: [] })}
+          values={genres}
+          onToggle={(v) => onChange({ genres: toggle(genres, v) })}
+          onClear={() => onChange({ genres: [] })}
           className="max-xs:flex-1"
         />
 
@@ -253,7 +253,7 @@ export function FiltersBar({
             onChange({
               search: "",
               year: undefined,
-              genre: [],
+              genres: [],
               pages: undefined,
             });
           }}
