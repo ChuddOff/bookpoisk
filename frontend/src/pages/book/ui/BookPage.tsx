@@ -146,6 +146,7 @@ export function BookPage() {
           title={`Похожие в жанре «${genres[0]}»`}
           params={{ page: 1, per_page: 10, genres: [genres[0]] }}
           moreHref={`/catalog?genres=${encodeURIComponent(genres[0])}`}
+          className="mt-3"
         />
       )}
 

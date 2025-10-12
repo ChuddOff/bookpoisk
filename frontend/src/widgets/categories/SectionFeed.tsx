@@ -7,11 +7,21 @@ import {
   type ListParams,
 } from "@/entities/book";
 import { HorizontalCarousel } from "@/widgets/carousels";
-import { Button } from "@/shared/ui";
+import { Button, cn } from "@/shared/ui";
 
-type Props = { title: string; params: ListParams; moreHref?: string };
+type Props = {
+  title: string;
+  params: ListParams;
+  moreHref?: string;
+  className?: string;
+};
 
-export function SectionFeed({ title, params, moreHref = "/catalog" }: Props) {
+export function SectionFeed({
+  title,
+  params,
+  className,
+  moreHref = "/catalog",
+}: Props) {
   const { isLoading, error, mutate, data } = useBooks({
     per_page: 10,
     page: 1,
@@ -21,7 +31,7 @@ export function SectionFeed({ title, params, moreHref = "/catalog" }: Props) {
   const items = data?.data ?? [];
 
   return (
-    <section className="space-y-3">
+    <section className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-ink">{title}</h2>
         <Button variant="outline" asChild>
