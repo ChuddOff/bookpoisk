@@ -46,7 +46,10 @@ export function LikeButton({
       disabled={pending || !!liked}
       onClick={handleClick}
       aria-pressed={!!liked}
-      className={cn("inline-flex items-center gap-2", className)}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full h-[40px]",
+        className
+      )}
     >
       {pending ? (
         <Loader2 className="h-4 w-4 animate-spin" />

@@ -36,7 +36,7 @@ export class BookService {
 
   getById(id: string) {
     return this.api
-      .get<BookResponse | any>(ENDPOINT.book, { id })
+      .get<BookResponse | any>(`${ENDPOINT.book}/${id}`)
       .then((r: any) =>
         r && typeof r === "object" && "data" in r
           ? (r as BookResponse)
