@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BookController {
   private final BookRepository repo;
+  List<Book> generatedBooks = new ArrayList<>();
 
 
   /** Каталог: q только по title; авторы/жанры — списки; год — диапазон. */
@@ -34,6 +36,8 @@ public class BookController {
     @RequestParam(required = false) List<String> genres,
     @RequestParam(required = false) Integer yearFrom,
     @RequestParam(required = false) Integer yearTo,
+    @RequestParam(required = false) Integer pageFrom,
+    @RequestParam(required = false) Integer pageTo,
     @PageableDefault(size = 12, sort = "title") Pageable pageable
   ) {
 
@@ -47,16 +51,19 @@ public class BookController {
       BookSpecifications.titleContains(q),
       BookSpecifications.authorInIgnoreCase(authors),
       BookSpecifications.genreInIgnoreCase(genres),
-      BookSpecifications.yearBetween(yearFrom, yearTo)
+      BookSpecifications.yearBetween(yearFrom, yearTo),
+      BookSpecifications.pageBetween(pageFrom, pageTo)
     );
 
     Page<Book> page = repo.findAll(spec, pageable);
 
+    // Необъяснимо, но факт
     if (page.getTotalElements() > 0 && pageable.getPageNumber() >= page.getTotalPages()) {
       int last = Math.max(0, page.getTotalPages() - 1);
       page = repo.findAll(spec, PageRequest.of(last, pageable.getPageSize(), pageable.getSort()));
     }
     return PageUtil.toPayload(page);
+    // ====================
   }
 
   /** Подсказки по названиям: для строки поиска. */
@@ -79,7 +86,7 @@ public class BookController {
     return PageUtil.toPayload(p);
   }
 
-  @GetMapping("/books/{id}")
+  @GetMapping("/book/{id}")
   public Book get(@PathVariable UUID id) {
     return repo.findById(id)
       .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -90,5 +97,25 @@ public class BookController {
   public Book create(@RequestBody @Valid Book body) {
     body.setId(null);
     return repo.save(body);
+  }
+
+  @GetMapping("/genres")
+  public List<String> booksSelection() {
+    return repo.findAllGenres();
+  }
+
+  @GetMapping("/generate/get")
+  public String giveBooksToLM() { // List<Book> вместо String
+    return "";
+  }
+
+  @PostMapping("/generate/post")
+  public void takeBooksToLM(List<Book> books) {
+    generatedBooks = books;
+  }
+
+  @GetMapping("/books_ai")
+  public List<Book> aiToFront() {
+    return generatedBooks;
   }
 }
