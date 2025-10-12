@@ -1,15 +1,27 @@
 import * as React from "react";
-import { useParams, Link } from "react-router-dom";
-import { Container } from "@/shared/ui/container";
-import { Button } from "@/shared/ui/button";
-import { useBook } from "@/entities/book/api/swr/useBook";
-import { SectionFeed } from "@/widgets/categories/SectionFeed";
-import { CustomLightbox } from "@/shared";
-import { LikeButton } from "@/features/favorites/ui/LikeButton";
+import { Link, useParams } from "react-router-dom";
+
+import { useBook } from "@/entities/book";
+import { LikeButton } from "@/features/favorites";
+import { SectionFeed } from "@/widgets/categories";
+import { Button, Container, CustomLightbox } from "@/shared/ui";
 
 /** Локальный скелетон без зависимостей */
 function BlockSkeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-lg bg-soft ${className}`} />;
+}
+
+/** Пара «ключ–значение» в таблице характеристик */
+function SpecRow({ label, value }: { label: string; value?: React.ReactNode }) {
+  if (!value) return null;
+  return (
+    <div className="grid grid-cols-[120px_1fr] gap-4 border-b last:border-b-0 border-line/70">
+      <div className="text-xs uppercase tracking-wide text-slate-500 flex items-center p-3">
+        {label}
+      </div>
+      <div className="text-slate-800 flex items-center p-3">{value}</div>
+    </div>
+  );
 }
 
 export function BookPage() {
@@ -20,13 +32,9 @@ export function BookPage() {
   if (isLoading) {
     return (
       <Container className="gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-          <BlockSkeleton className="h-[360px]" />
-          <div className="space-y-3">
-            <BlockSkeleton className="h-7 w-2/3" />
-            <BlockSkeleton className="h-5 w-1/3" />
-            <BlockSkeleton className="h-24 w-full" />
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
+          <BlockSkeleton className="h-[420px]" />
+          <BlockSkeleton className="h-[420px]" />
         </div>
       </Container>
     );
@@ -51,14 +59,14 @@ export function BookPage() {
   const cover = book.cover || book.photos?.[0] || "";
 
   return (
-    <Container className="gap-8">
-      {/* Верхний блок: обложка + ключевая инфа */}
-      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 items-start">
-        {/* Обложка */}
-        <div className="rounded-xl border border-line bg-white p-3 shadow-card">
+    <Container className="gap-10">
+      {/* Основная область: слева обложка, справа — карточка с аннотацией и спецификацией */}
+      <div className="flex gap-6 items-start max-xs:flex-col">
+        {/* Обложка слева */}
+        <div className="rounded-xl border border-line bg-white p-3 shadow-card w-full max-w-[360px] min-w-[240px] max-xs:mx-auto max-xs:max-w-[400px]">
           {cover ? (
             <button
-              className="block w-full"
+              className="block w-full cursor-pointer"
               onClick={() => setLbOpen(true)}
               aria-label="Открыть изображение"
             >
@@ -73,18 +81,52 @@ export function BookPage() {
           )}
         </div>
 
-        {/* Основные данные */}
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-ink">{book.title}</h1>
-          <div className="text-slate-600">
-            {book.author}
-            {book.year ? ` • ${book.year}` : ""}
-            {book.pages ? ` • ${book.pages} стр.` : ""}
+        {/* Правая «карточка» — заголовок, аннотация, спецификация, действия */}
+        <div className="rounded-xl border border-line bg-white p-4 md:p-6 shadow-card">
+          {/* Заголовок книги и действия */}
+          <div className="flex justify-between gap-4 items-center">
+            <h1 className="text-2xl font-bold text-ink">{book.title}</h1>
+            <div className="shrink-0 flex gap-3 max-tablet:hidden">
+              <LikeButton id={book.id} />
+              <Button variant="outline" asChild>
+                <Link to="/catalog">К каталогу</Link>
+              </Button>
+            </div>
           </div>
 
-          {/* Жанры-«чипсы» */}
+          {/* Аннотация */}
+          {book.description && (
+            <section className="mt-2">
+              <h2 className="mb-2 text-lg font-semibold">Аннотация</h2>
+              <ExpandableText text={book.description} />
+            </section>
+          )}
+
+          {/* Таблица характеристик */}
+          <section className="mt-2">
+            <div className="rounded-lg border border-line/70">
+              <SpecRow label="Автор" value={book.author} />
+              {/* Если появится в DTO — отобразится; иначе пропустим */}
+              <SpecRow label="Издательство" value={(book as any).publisher} />
+              <SpecRow
+                label="Страниц"
+                value={book.pages ? String(book.pages) : undefined}
+              />
+              <SpecRow label="Год издания" value={book.year} />
+              <SpecRow label="Тираж" value={(book as any).printRun} />
+            </div>
+          </section>
+
+          <div className="shrink-0 flex gap-2 mt-2 tablet:hidden flex-col-reverse">
+            <LikeButton id={book.id} />
+            <Button variant="outline" asChild>
+              <Link to="/catalog">К каталогу</Link>
+            </Button>
+          </div>
+
+          {/* Жанры-«чипсы» (опционально, внизу карточки) */}
           {!!genres.length && (
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {genres.map((g) => (
                 <span
                   key={g}
@@ -95,24 +137,8 @@ export function BookPage() {
               ))}
             </div>
           )}
-
-          {/* Действия */}
-          <div className="flex gap-2">
-            <LikeButton id={book.id} />
-            <Button variant="outline" asChild>
-              <Link to="/catalog">К каталогу</Link>
-            </Button>
-          </div>
         </div>
       </div>
-
-      {/* Описание */}
-      {book.description && (
-        <section className="rounded-xl border border-line bg-white p-4 leading-relaxed text-slate-800">
-          <h2 className="mb-2 text-lg font-semibold">Описание</h2>
-          <ExpandableText text={book.description} />
-        </section>
-      )}
 
       {/* Похожие по первому жанру */}
       {genres[0] && (
@@ -123,7 +149,7 @@ export function BookPage() {
         />
       )}
 
-      {/* Lightbox */}
+      {/* Лайтбокс */}
       {cover && (
         <CustomLightbox
           src={cover}

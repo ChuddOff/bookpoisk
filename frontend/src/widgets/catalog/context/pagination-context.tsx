@@ -1,7 +1,8 @@
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
-import { QUERY_PARAMS } from "@/shared/constants/query";
-import type { ListParams } from "@/entities/book/api/book.service";
+
+import { type ListParams } from "@/entities/book";
+import { QUERY_PARAMS } from "@/shared/constants";
 
 const MIN_YEAR = 1000;
 const MAX_PAGES = 100000;

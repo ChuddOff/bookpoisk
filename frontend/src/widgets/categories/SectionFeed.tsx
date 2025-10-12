@@ -1,9 +1,13 @@
-import { Button } from "@/shared/ui/button";
-import { HorizontalCarousel } from "@/widgets/carousels/HorizontalCarousel";
-import { BookCard, BookCardSkeleton } from "@/entities/book/ui/BookCard";
-import { useBooks } from "@/entities/book/api";
-import type { ListParams } from "@/entities/book/api/book.service";
 import { AlertTriangle } from "lucide-react";
+
+import {
+  BookCard,
+  BookCardSkeleton,
+  useBooks,
+  type ListParams,
+} from "@/entities/book";
+import { HorizontalCarousel } from "@/widgets/carousels";
+import { Button } from "@/shared/ui";
 
 type Props = { title: string; params: ListParams; moreHref?: string };
 
@@ -23,7 +27,7 @@ export function SectionFeed({ title, params, moreHref = "/catalog" }: Props) {
         <Button variant="outline" asChild>
           <a
             href={`${moreHref}?${new URLSearchParams({
-              genres: params.genres?.join(",") ?? "",
+              genre: params.genre?.join(",") ?? "",
               page: "1",
               per_page: "12",
             }).toString()}`}

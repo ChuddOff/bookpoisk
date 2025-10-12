@@ -1,8 +1,6 @@
 // src/entities/book/api/book.service.ts
-import { apiService, type ApiService } from "@/shared/api/http.service";
-import { ENDPOINT } from "@/shared/api/endpoints";
-import type { PagedBooksResponse } from "../model/types";
-import type { BookResponse } from "../model/dto";
+import { apiService, type ApiService, ENDPOINT } from "@/shared/api";
+import type { BookResponse, PagedBooksResponse } from "../model";
 
 export type ListParams = {
   page?: number;
@@ -38,7 +36,7 @@ export class BookService {
 
   getById(id: string) {
     return this.api
-      .get<BookResponse | any>(ENDPOINT.book, { id })
+      .get<BookResponse | any>(`${ENDPOINT.book}/${id}`)
       .then((r: any) =>
         r && typeof r === "object" && "data" in r
           ? (r as BookResponse)

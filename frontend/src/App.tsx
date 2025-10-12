@@ -1,6 +1,4 @@
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 
 export default function App() {
   return (

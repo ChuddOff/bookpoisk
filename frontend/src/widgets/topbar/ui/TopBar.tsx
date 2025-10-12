@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
 import { Book, Heart, Search, User } from "lucide-react";
-import { Container } from "@/shared";
+
+import { Button, Container, Input } from "@/shared/ui";
 
 export function TopBar() {
   return (

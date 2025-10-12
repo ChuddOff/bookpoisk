@@ -1,4 +1,3 @@
-import { cn } from "@/shared/ui/cn";
 import {
   Pagination,
   PaginationContent,
@@ -7,7 +6,8 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/shared/ui/pagination";
+  cn,
+} from "@/shared/ui";
 
 interface Props {
   onClick: (val: number) => void;

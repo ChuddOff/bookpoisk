@@ -1,6 +1,7 @@
 import { SWRConfig } from "swr";
-import { toast } from "@/shared/ui/sonner";
 import { UserX } from "lucide-react";
+
+import { toast } from "@/shared/ui";
 
 type AnyErr = unknown & {
   status?: number;
