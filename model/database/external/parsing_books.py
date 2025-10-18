@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 BASE_URL = "https://www.chitai-gorod.ru"
 TOTAL_PAGES = 3332
-START_PAGE = 598
+START_PAGE = 665
 OUTPUT_FILE = "books.json"
 
 
