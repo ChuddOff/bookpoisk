@@ -25,7 +25,7 @@ function DesktopResults({
   return (
     <div
       className={cn(
-        "absolute left-0 top-full z-50 mt-2 w-full rounded-lg border border-line bg-white p-3 shadow-xl",
+        "absolute left-0 top-full z-50 mt-2 w-full rounded-xl border border-line bg-white shadow-xl p-[14px]",
         className
       )}
     >

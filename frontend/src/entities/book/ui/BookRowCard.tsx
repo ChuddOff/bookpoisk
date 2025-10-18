@@ -20,7 +20,7 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
         className
       )}
     >
-      <div className="h-30 w-24 shrink-0 overflow-hidden rounded-lg bg-soft">
+      <div className="h-30 w-24 max-sm:w-32 max-sm:h-40 shrink-0 overflow-hidden rounded-lg bg-soft">
         {cover ? (
           <img
             src={cover}
