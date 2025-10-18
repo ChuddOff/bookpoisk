@@ -4,8 +4,10 @@ export type {
   PagedBooksEntity,
 } from "./entity";
 export type {
+  BookDto,
+  PagedBooksDto,
   BookResponseDto,
-  OkResponseDto,
   PagedBooksResponseDto,
+  OkResponseDto,
   GenresDto,
 } from "./dto";

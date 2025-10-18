@@ -1,12 +1,19 @@
-import type { BookEntity, PagedBooksEntity } from "./entity";
+import type { BookEntity, PageMetaEntity } from "./entity";
+
+/** DTO книги — напрямую повторяет сущность. */
+export type BookDto = BookEntity;
+
+/** DTO для списка книг с пагинацией. */
+export type PagedBooksDto = PageMetaEntity & {
+  /** Список книг, полученный от API. */
+  data: BookEntity[];
+};
 
 export interface BookResponseDto {
-  data: BookEntity;
+  data: BookDto;
 }
 
-export interface PagedBooksResponseDto {
-  data: PagedBooksEntity;
-}
+export type PagedBooksResponseDto = PagedBooksDto;
 
 export interface OkResponseDto {
   data?: unknown;
