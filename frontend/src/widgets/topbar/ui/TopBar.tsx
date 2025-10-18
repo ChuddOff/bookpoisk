@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Book, Heart, Search, User } from "lucide-react";
+import { Heart, Search, User } from "lucide-react";
 
-import { Button, Container, Input } from "@/shared/ui";
+import { Button, Container } from "@/shared/ui";
 import { MobileSearchDialog } from "./MobileSearchDialog";
 import { SearchBar } from "./SearchBar";
 import React from "react";

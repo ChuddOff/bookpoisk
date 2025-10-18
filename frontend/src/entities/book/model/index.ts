@@ -1,2 +1,11 @@
-export type { Book, PageMeta, PagedBooksResponse } from "./types";
-export type { BookResponse, OkResponse } from "./dto";
+export type {
+  BookEntity,
+  PageMetaEntity,
+  PagedBooksEntity,
+} from "./entity";
+export type {
+  BookResponseDto,
+  OkResponseDto,
+  PagedBooksResponseDto,
+  GenresDto,
+} from "./dto";

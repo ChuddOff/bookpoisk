@@ -1,6 +1,6 @@
 import { apiService, type ApiService } from "@/shared/api/http.service";
 import { ENDPOINT } from "@/shared/api/endpoints";
-import type { User } from "../model/types";
+import type { User } from "@/entities/user";
 
 export class UserService {
   private readonly api: ApiService;

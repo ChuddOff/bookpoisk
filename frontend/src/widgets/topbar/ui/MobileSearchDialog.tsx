@@ -2,17 +2,17 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
-import { Dialog, DialogContent, DialogOverlay } from "@/shared/ui/dialog";
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
-import { cn } from "@/shared/ui/cn";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogOverlay,
+  Input,
+  cn,
+} from "@/shared/ui";
 
 import { useDebouncedValue } from "@/shared/lib/hooks/useDebouncedValue";
-import { useBooks } from "@/entities/book";
-import {
-  BookRowCard,
-  BookRowCardSkeleton,
-} from "@/entities/book/ui/BookRowCard";
+import { useBooks, BookRowCard, BookRowCardSkeleton } from "@/entities/book";
 
 function MobileResults({
   query,

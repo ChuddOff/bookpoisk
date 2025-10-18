@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import type { Book } from "@/entities/book/model/types";
-import { cn } from "@/shared/ui/cn";
+
+import type { BookEntity } from "@/entities/book";
+import { cn } from "@/shared/ui";
 
 type Props = {
-  book: Book;
+  book: BookEntity;
   onNavigate?: () => void;
   className?: string;
 };
@@ -15,11 +16,11 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
       to={`/book/${book.id}`}
       onClick={onNavigate}
       className={cn(
-        "group flex gap-3 rounded-lg border border-line bg-white p-2 hover:bg-soft transition-colors",
+        "group flex gap-3 rounded-lg border border-line bg-white p-2 transition-colors hover:bg-soft",
         className
       )}
     >
-      <div className="h-30 w-24 shrink-0 overflow-hidden rounded-md bg-soft">
+      <div className="h-30 w-24 shrink-0 overflow-hidden rounded-lg bg-soft">
         {cover ? (
           <img
             src={cover}
@@ -32,11 +33,11 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
 
       <div className="min-w-0 flex-1">
         {/* было truncate — убираем, разрешаем переносы */}
-        <div className="text-sm font-medium text-ink line-clamp-2 break-words">
+        <div className="line-clamp-2 break-words text-sm font-medium text-ink">
           {book.title}
         </div>
 
-        <div className="mt-0.5 text-xs text-slate-600 whitespace-normal break-words">
+        <div className="mt-0.5 whitespace-normal break-words text-xs text-slate-600">
           {book.author}
           {book.year ? ` • ${book.year}` : ""}
           {book.pages ? ` • ${book.pages} стр.` : ""}
@@ -62,7 +63,7 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
 export function BookRowCardSkeleton() {
   return (
     <div className="flex gap-3 rounded-lg border border-line bg-white p-2">
-      <div className="h-30 w-24 rounded-md bg-soft animate-pulse" />
+      <div className="h-30 w-24 rounded-lg bg-soft animate-pulse" />
       <div className="min-w-0 flex-1 space-y-2">
         <div className="h-4 w-2/3 rounded bg-soft animate-pulse" />
         <div className="h-3 w-1/2 rounded bg-soft animate-pulse" />

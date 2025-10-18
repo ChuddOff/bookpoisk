@@ -1,25 +1,19 @@
-import type { Book } from "./types";
+import type { BookEntity, PagedBooksEntity } from "./entity";
 
-export type BookResponse = {
-  data: Book;
-};
+export interface BookResponseDto {
+  data: BookEntity;
+}
 
-export type PagedBooksResponse = {
-  data: {
-    data: Book[];
-    first: number;
-    items: number;
-    last: number;
-    next: number | null;
-    page: number;
-    prev: number | null;
-  };
-};
+export interface PagedBooksResponseDto {
+  data: PagedBooksEntity;
+}
 
-export type OkResponse = {
+export interface OkResponseDto {
   data?: unknown;
   success?: boolean;
   message?: string;
-};
+}
 
-export type GenresDto = string[] | { data: string[] };
+export type GenresDto = Array<BookEntity["genre"]> | {
+  data: Array<BookEntity["genre"]>;
+};

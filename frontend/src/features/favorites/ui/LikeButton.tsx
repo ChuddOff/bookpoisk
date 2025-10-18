@@ -42,14 +42,11 @@ export function LikeButton({
     <Button
       type="button"
       variant={liked ? "default" : "outline"}
-      size="sm"
+      size="default"
       disabled={pending || !!liked}
       onClick={handleClick}
       aria-pressed={!!liked}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full h-[40px]",
-        className
-      )}
+      className={cn("gap-2", className)}
     >
       {pending ? (
         <Loader2 className="h-4 w-4 animate-spin" />

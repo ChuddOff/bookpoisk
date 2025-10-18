@@ -2,15 +2,9 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 
-import { Input } from "@/shared/ui/input";
-import { Button } from "@/shared/ui/button";
-import { cn } from "@/shared/ui/cn";
+import { Button, Input, cn } from "@/shared/ui";
 import { useDebouncedValue } from "@/shared/lib/hooks/useDebouncedValue";
-import { useBooks } from "@/entities/book";
-import {
-  BookRowCard,
-  BookRowCardSkeleton,
-} from "@/entities/book/ui/BookRowCard";
+import { useBooks, BookRowCard, BookRowCardSkeleton } from "@/entities/book";
 
 /** Выпадашка результатов под инпутом (отрезаем до 4) */
 function DesktopResults({
@@ -31,7 +25,7 @@ function DesktopResults({
   return (
     <div
       className={cn(
-        "absolute left-0 top-full z-50 mt-2 w-full rounded-xl border border-line bg-white p-2 shadow-xl",
+        "absolute left-0 top-full z-50 mt-2 w-full rounded-xl border border-line bg-white p-3 shadow-xl",
         className
       )}
     >
@@ -48,14 +42,16 @@ function DesktopResults({
               <BookRowCard key={b.id} book={b} />
             ))}
           </div>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-3 flex justify-end">
             <Button size="sm" onClick={onMore}>
               Ещё
             </Button>
           </div>
         </>
       ) : (
-        <div className="p-4 text-sm text-slate-600">Ничего не найдено.</div>
+        <div className="rounded-lg bg-soft p-2 text-sm text-slate-600">
+          Ничего не найдено.
+        </div>
       )}
     </div>
   );
