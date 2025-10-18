@@ -43,10 +43,11 @@ function MobileResults({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 h-full">
       {items.map((b) => (
         <BookRowCard key={b.id} book={b} onNavigate={onNavigate} />
       ))}
+      <div className="h-[65px]" />
     </div>
   );
 }
@@ -99,12 +100,12 @@ export function MobileSearchDialog({
       <DialogContent
         hideClose // ⬅️ скрываем дефолтный крестик shadcn
         className={cn(
-          "fixed left-0 top-0 z-[80] m-0 h-[100dvh] w-[100dvw] max-w-none",
+          "fixed left-0 top-0 z-[80] m-0 h-full w-[100dvw] max-w-none",
           "translate-x-0 translate-y-0 rounded-none border-0 p-0",
           "!animate-none"
         )}
       >
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
           {/* Верхняя панель */}
           <div className="flex items-center gap-2 border-b border-line p-3">
             {/* наш собственный крестик слева */}
@@ -155,7 +156,7 @@ export function MobileSearchDialog({
           </div>
 
           {/* Результаты */}
-          <div className="flex-1 overflow-auto p-3">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
             {query ? (
               <MobileResults query={query} onNavigate={closeAndNavigate} />
             ) : (
@@ -166,7 +167,7 @@ export function MobileSearchDialog({
           </div>
 
           {/* Кнопка «Ещё» */}
-          <div className="border-t border-line p-3">
+          <div className="border-t border-line p-3 absolute bottom-0 w-full bg-white">
             <Button className="w-full" onClick={goCatalog} disabled={!q.trim()}>
               Ещё
             </Button>
