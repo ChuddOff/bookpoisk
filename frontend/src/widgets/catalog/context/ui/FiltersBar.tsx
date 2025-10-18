@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
   cn,
 } from "@/shared/ui";
+import { useBookGenres } from "@/entities/book";
 
 // те же наборы опций, что в контексте
 const YEARS = [
@@ -74,6 +75,7 @@ function MultiSelect({
 }) {
   const [open, setOpen] = React.useState(false);
   const count = values?.length ?? 0;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -201,6 +203,16 @@ export function FiltersBar({
     return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
   };
 
+  const {
+    data: genresFromApi,
+    isLoading: genresLoading,
+    error: genresError,
+  } = useBookGenres();
+  const GENRE_OPTIONS = (genresFromApi ?? []).map((g) => ({
+    label: g,
+    value: g,
+  }));
+
   return (
     <div
       className={cn(
@@ -229,9 +241,15 @@ export function FiltersBar({
         <MultiSelect
           title="Жанры"
           placeholder="Найти жанр…"
-          options={GENRE}
-          values={genres}
-          onToggle={(v) => onChange({ genres: toggle(genres, v) })}
+          options={GENRE_OPTIONS}
+          values={genres} // ⚠️ use your prop name; мы договорились использовать множественное: genres: string[]
+          onToggle={(v) =>
+            onChange({
+              genres: (genres ?? []).includes(v)
+                ? (genres ?? []).filter((x) => x !== v)
+                : [...(genres ?? []), v],
+            })
+          }
           onClear={() => onChange({ genres: [] })}
           className="max-xs:flex-1"
         />

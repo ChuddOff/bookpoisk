@@ -21,3 +21,5 @@ export type OkResponse = {
   success?: boolean;
   message?: string;
 };
+
+export type GenresDto = string[] | { data: string[] };

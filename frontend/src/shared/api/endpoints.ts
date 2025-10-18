@@ -6,4 +6,5 @@ export const ENDPOINT = {
   books: "/books",
   bookForMe: "/bookForMe",
   likeBook: "/likeBook",
+  genres: "/genres",
 } as const;

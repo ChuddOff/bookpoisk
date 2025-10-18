@@ -1,6 +1,7 @@
 // src/entities/book/api/book.service.ts
 import { apiService, type ApiService, ENDPOINT } from "@/shared/api";
 import type { BookResponse, PagedBooksResponse } from "../model";
+import type { GenresDto } from "../model/dto";
 
 export type ListParams = {
   page?: number;
@@ -42,6 +43,10 @@ export class BookService {
           ? (r as BookResponse)
           : ({ data: r } as BookResponse)
       );
+  }
+
+  genres() {
+    return this.api.get<GenresDto>(ENDPOINT.genres);
   }
 }
 
