@@ -1,45 +1,45 @@
 import * as React from "react";
 
-import type { Book } from "@/entities/book";
+import type { BookEntity } from "@/entities/book";
 import { LikeButton } from "@/features/favorites";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 
-type Props = { book: Book; onLiked?: (id: string) => void };
+type Props = { book: BookEntity; onLiked?: (id: string) => void };
 
 export function BookCard({ book }: Props) {
   const [liked, setLiked] = React.useState(false);
 
   return (
     <Card
-      className="snap-start w-full rounded-xl h-full flex flex-col items-between mx-auto cursor-pointer"
+      className="mx-auto flex h-full w-full snap-start cursor-pointer flex-col"
       onClick={() => {
         window.location.href = `/book/${book.id}`;
       }}
     >
-      <div className="flex flex-col select-none">
+      <div className="flex select-none flex-col">
         <div className="p-3">
           <CoverBox src={book.cover} alt={book.title} />
         </div>
 
-        <CardHeader className="pt-0">
-          <CardTitle className="text-sm leading-tight line-clamp-2">
+        <CardHeader className="px-3 pb-3 pt-0">
+          <CardTitle className="line-clamp-2 text-sm leading-tight">
             {book.title}
           </CardTitle>
-          <div className="mt-1 text-xs text-slate-500 line-clamp-2 mb-0">
+          <div className="mb-0 mt-1 line-clamp-2 text-xs text-slate-500">
             {book.author}
           </div>
-          <div className="text-xs text-slate-500 line-clamp-1">{book.year}</div>
+          <div className="text-xs text-slate-500">{book.year}</div>
         </CardHeader>
       </div>
 
-      <CardContent className="mt-auto  select-none">
-        <div className="flex flex-col items-start gap-6 mt-auto">
+      <CardContent className="mt-auto select-none px-3 pb-3 pt-0">
+        <div className="mt-auto flex flex-col items-start gap-6">
           {book.genre ? (
             <div className="flex flex-col gap-2">
               {book.genre.split(", ").map((genre, i) => (
                 <Badge
                   variant="secondary"
-                  className="text-[11px] w-fit line-clamp-1"
+                  className="line-clamp-1 w-fit text-[11px]"
                   key={i}
                 >
                   {genre}
@@ -47,7 +47,12 @@ export function BookCard({ book }: Props) {
               ))}
             </div>
           ) : null}
-          <LikeButton id={book.id} liked={liked} onLikedChange={setLiked} />
+          <LikeButton
+            id={book.id}
+            liked={liked}
+            onLikedChange={setLiked}
+            className="w-full"
+          />
         </div>
       </CardContent>
     </Card>
@@ -56,9 +61,8 @@ export function BookCard({ book }: Props) {
 
 function CoverBox({ src, alt }: { src?: string; alt: string }) {
   return (
-    <div className="aspect-[3/4] w-full overflow-hidden rounded-lg border border-line bg-soft">
+    <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-line bg-soft">
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={src}
           alt={alt}
@@ -68,7 +72,7 @@ function CoverBox({ src, alt }: { src?: string; alt: string }) {
           }}
         />
       ) : (
-        <div className="h-full w-full grid place-items-center text-xs text-slate-500">
+        <div className="grid h-full w-full place-items-center text-xs text-slate-500">
           Нет обложки
         </div>
       )}
@@ -86,13 +90,13 @@ const fallbackDataUri =
 // оставим Skeleton для состояний загрузки:
 export function BookCardSkeleton() {
   return (
-    <Card className="snap-start w-full rounded-xl">
+    <Card className="w-full snap-start">
       <div className="p-3">
-        <div className="aspect-[3/4] w-full rounded-lg bg-soft border border-line" />
+        <div className="aspect-[3/4] w-full rounded-xl border border-line bg-soft" />
       </div>
-      <CardHeader className="pt-0">
-        <div className="h-4 w-4/5 bg-soft rounded mb-2" />
-        <div className="h-3 w-2/3 bg-soft rounded" />
+      <CardHeader className="px-3 pb-3 pt-0">
+        <div className="mb-2 h-4 w-4/5 rounded bg-soft" />
+        <div className="h-3 w-2/3 rounded bg-soft" />
       </CardHeader>
     </Card>
   );

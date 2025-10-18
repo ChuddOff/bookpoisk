@@ -24,14 +24,6 @@ const YEARS = [
   { label: "1990–2010", value: "1990-2010" },
   { label: "После 2010", value: "≥2010" },
 ];
-const GENRE = [
-  { label: "Фантастика", value: "sci-fi" },
-  { label: "Фэнтези", value: "fantasy" },
-  { label: "Детектив", value: "detective" },
-  { label: "Нон-фикшн", value: "non-fiction" },
-  { label: "Классика", value: "classic" },
-  { label: "Манга", value: "manga" },
-];
 const PAGES = [
   { label: "≤ 100 стр.", value: "≤100" },
   { label: "100–200", value: "100-200" },
@@ -198,16 +190,12 @@ export function FiltersBar({
     return () => clearTimeout(id);
   }, [local]);
 
-  const toggle = (list: string[] | undefined, v: string) => {
-    const base = list ?? [];
-    return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
-  };
+  // const toggle = (list: string[] | undefined, v: string) => {
+  //   const base = list ?? [];
+  //   return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
+  // };
 
-  const {
-    data: genresFromApi,
-    isLoading: genresLoading,
-    error: genresError,
-  } = useBookGenres();
+  const { data: genresFromApi } = useBookGenres();
   const GENRE_OPTIONS = (genresFromApi ?? []).map((g) => ({
     label: g,
     value: g,

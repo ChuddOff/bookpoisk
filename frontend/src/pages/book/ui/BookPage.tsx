@@ -66,9 +66,9 @@ export function BookPage() {
         {/* LEFT: запретить shrink и зафиксировать базис */}
         <div
           className="
-        shrink-0 basis-[360px]           /* фиксируем ~360px на десктопе */
+        shrink-0 basis-[360px]
         max-lg:basis-[300px] max-md:basis-[260px]
-        max-xs:basis-auto max-xs:w-full  /* на очень узких — пусть растянется */
+        max-xs:basis-auto max-xs:w-full
         rounded-xl border border-line bg-white p-3 shadow-card
         max-xs:mx-auto max-xs:max-w-[400px]
       "
@@ -82,7 +82,7 @@ export function BookPage() {
               <img
                 src={cover}
                 alt={book.title}
-                className="w-full h-auto rounded-lg object-cover"
+                className="w-full h-auto rounded-xl object-cover"
               />
             </button>
           ) : (
