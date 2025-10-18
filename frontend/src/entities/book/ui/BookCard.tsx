@@ -2,13 +2,7 @@ import * as React from "react";
 
 import type { BookEntity } from "@/entities/book";
 import { LikeButton } from "@/features/favorites";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 
 type Props = { book: BookEntity; onLiked?: (id: string) => void };
 
@@ -53,7 +47,12 @@ export function BookCard({ book }: Props) {
               ))}
             </div>
           ) : null}
-          <LikeButton id={book.id} liked={liked} onLikedChange={setLiked} />
+          <LikeButton
+            id={book.id}
+            liked={liked}
+            onLikedChange={setLiked}
+            className="w-full"
+          />
         </div>
       </CardContent>
     </Card>

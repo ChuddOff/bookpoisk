@@ -190,6 +190,11 @@ export function FiltersBar({
     return () => clearTimeout(id);
   }, [local]);
 
+  // const toggle = (list: string[] | undefined, v: string) => {
+  //   const base = list ?? [];
+  //   return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
+  // };
+
   const { data: genresFromApi } = useBookGenres();
   const GENRE_OPTIONS = (genresFromApi ?? []).map((g) => ({
     label: g,
