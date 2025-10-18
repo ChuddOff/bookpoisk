@@ -80,7 +80,7 @@ export function SearchBar({ className }: { className?: string }) {
   // обычный поток по дебаунсу (≥ 2 символов)
   React.useEffect(() => {
     const s = debounced.trim();
-    if (s.length >= 2) {
+    if (s.length >= 1) {
       setQuery(s);
       setOpen(true);
     } else if (!s) {

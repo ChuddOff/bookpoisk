@@ -69,7 +69,7 @@ export function MobileSearchDialog({
 
   React.useEffect(() => {
     const s = debounced.trim();
-    if (s.length >= 2) setQuery(s);
+    if (s.length >= 1) setQuery(s);
     if (!s) setQuery("");
   }, [debounced]);
 
@@ -82,7 +82,7 @@ export function MobileSearchDialog({
   const goCatalog = React.useCallback(() => {
     const s = q.trim();
     onOpenChange(false);
-    if (!s) return;
+    if (!s) nav(`/catalog`);
     nav(`/catalog?search=${encodeURIComponent(s)}`);
   }, [q, nav, onOpenChange]);
 
@@ -159,8 +159,8 @@ export function MobileSearchDialog({
             {query ? (
               <MobileResults query={query} onNavigate={closeAndNavigate} />
             ) : (
-              <div className="p-4 text-sm text-slate-600">
-                Введите минимум 2 символа…
+              <div className="p-4 text-sm text-slate-600 mx-auto text-center">
+                Начните вводить название…
               </div>
             )}
           </div>
