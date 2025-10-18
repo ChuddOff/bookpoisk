@@ -1,23 +1,26 @@
-import type { Book } from "./types";
+import type { BookEntity, PageMetaEntity } from "./entity";
 
-export type BookResponse = {
-  data: Book;
+/** DTO книги — напрямую повторяет сущность. */
+export type BookDto = BookEntity;
+
+/** DTO для списка книг с пагинацией. */
+export type PagedBooksDto = PageMetaEntity & {
+  /** Список книг, полученный от API. */
+  data: BookEntity[];
 };
 
-export type PagedBooksResponse = {
-  data: {
-    data: Book[];
-    first: number;
-    items: number;
-    last: number;
-    next: number | null;
-    page: number;
-    prev: number | null;
-  };
-};
+export interface BookResponseDto {
+  data: BookDto;
+}
 
-export type OkResponse = {
+export type PagedBooksResponseDto = PagedBooksDto;
+
+export interface OkResponseDto {
   data?: unknown;
   success?: boolean;
   message?: string;
+}
+
+export type GenresDto = Array<BookEntity["genre"]> | {
+  data: Array<BookEntity["genre"]>;
 };

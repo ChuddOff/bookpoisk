@@ -15,6 +15,7 @@ import {
   PopoverTrigger,
   cn,
 } from "@/shared/ui";
+import { useBookGenres } from "@/entities/book";
 
 // те же наборы опций, что в контексте
 const YEARS = [
@@ -22,14 +23,6 @@ const YEARS = [
   { label: "1950–1990", value: "1950-1990" },
   { label: "1990–2010", value: "1990-2010" },
   { label: "После 2010", value: "≥2010" },
-];
-const GENRE = [
-  { label: "Фантастика", value: "sci-fi" },
-  { label: "Фэнтези", value: "fantasy" },
-  { label: "Детектив", value: "detective" },
-  { label: "Нон-фикшн", value: "non-fiction" },
-  { label: "Классика", value: "classic" },
-  { label: "Манга", value: "manga" },
 ];
 const PAGES = [
   { label: "≤ 100 стр.", value: "≤100" },
@@ -74,6 +67,7 @@ function MultiSelect({
 }) {
   const [open, setOpen] = React.useState(false);
   const count = values?.length ?? 0;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -196,10 +190,16 @@ export function FiltersBar({
     return () => clearTimeout(id);
   }, [local]);
 
-  const toggle = (list: string[] | undefined, v: string) => {
-    const base = list ?? [];
-    return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
-  };
+  // const toggle = (list: string[] | undefined, v: string) => {
+  //   const base = list ?? [];
+  //   return base.includes(v) ? base.filter((x) => x !== v) : [...base, v];
+  // };
+
+  const { data: genresFromApi } = useBookGenres();
+  const GENRE_OPTIONS = (genresFromApi ?? []).map((g) => ({
+    label: g,
+    value: g,
+  }));
 
   return (
     <div
@@ -229,9 +229,15 @@ export function FiltersBar({
         <MultiSelect
           title="Жанры"
           placeholder="Найти жанр…"
-          options={GENRE}
-          values={genres}
-          onToggle={(v) => onChange({ genres: toggle(genres, v) })}
+          options={GENRE_OPTIONS}
+          values={genres} // ⚠️ use your prop name; мы договорились использовать множественное: genres: string[]
+          onToggle={(v) =>
+            onChange({
+              genres: (genres ?? []).includes(v)
+                ? (genres ?? []).filter((x) => x !== v)
+                : [...(genres ?? []), v],
+            })
+          }
           onClear={() => onChange({ genres: [] })}
           className="max-xs:flex-1"
         />

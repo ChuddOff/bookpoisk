@@ -1,7 +1,7 @@
 import useSWR from "swr";
 import type { SWRConfiguration } from "swr";
 import { userService } from "../user.service";
-import type { User } from "../../model/types";
+import type { User } from "@/entities/user";
 
 export function useMe(cfg?: SWRConfiguration) {
   const key = ["me"] as const;

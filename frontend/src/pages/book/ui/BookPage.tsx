@@ -60,10 +60,19 @@ export function BookPage() {
 
   return (
     <Container className="gap-10">
-      {/* Основная область: слева обложка, справа — карточка с аннотацией и спецификацией */}
+      {/* БЫЛО: flex gap-6 items-start max-xs:flex-col */}
+      {/* МОЖНО ОСТАВИТЬ FLEX, НО ЗАДАТЬ ПРАВИЛЬНЫЕ ОГРАНИЧЕНИЯ */}
       <div className="flex gap-6 items-start max-xs:flex-col">
-        {/* Обложка слева */}
-        <div className="rounded-xl border border-line bg-white p-3 shadow-card w-full max-w-[360px] min-w-[240px] max-xs:mx-auto max-xs:max-w-[400px]">
+        {/* LEFT: запретить shrink и зафиксировать базис */}
+        <div
+          className="
+        shrink-0 basis-[360px]
+        max-lg:basis-[300px] max-md:basis-[260px]
+        max-xs:basis-auto max-xs:w-full
+        rounded-xl border border-line bg-white p-3 shadow-card
+        max-xs:mx-auto max-xs:max-w-[400px]
+      "
+        >
           {cover ? (
             <button
               className="block w-full cursor-pointer"
@@ -73,7 +82,7 @@ export function BookPage() {
               <img
                 src={cover}
                 alt={book.title}
-                className="w-full h-auto rounded-lg object-cover"
+                className="w-full h-auto rounded-xl object-cover"
               />
             </button>
           ) : (
@@ -81,11 +90,13 @@ export function BookPage() {
           )}
         </div>
 
-        {/* Правая «карточка» — заголовок, аннотация, спецификация, действия */}
-        <div className="rounded-xl border border-line bg-white p-4 md:p-6 shadow-card">
-          {/* Заголовок книги и действия */}
-          <div className="flex justify-between gap-4 items-center">
-            <h1 className="text-2xl font-bold text-ink">{book.title}</h1>
+        {/* RIGHT: дать колонке гибко занимать остаток и позволить контенту сжиматься */}
+        <div className="flex-1 min-w-0 rounded-xl border border-line bg-white p-4 md:p-6 shadow-card">
+          {/* Заголовок и действия */}
+          <div className="flex justify-between gap-4 items-start">
+            <h1 className="text-2xl font-bold text-ink break-words">
+              {book.title}
+            </h1>
             <div className="shrink-0 flex gap-3 max-tablet:hidden">
               <LikeButton id={book.id} />
               <Button variant="outline" asChild>
@@ -98,7 +109,10 @@ export function BookPage() {
           {book.description && (
             <section className="mt-2">
               <h2 className="mb-2 text-lg font-semibold">Аннотация</h2>
-              <ExpandableText text={book.description} />
+              {/* чтобы длинные слова не расширяли колонку */}
+              <div className="break-words">
+                <ExpandableText text={book.description} />
+              </div>
             </section>
           )}
 
@@ -106,7 +120,6 @@ export function BookPage() {
           <section className="mt-2">
             <div className="rounded-lg border border-line/70">
               <SpecRow label="Автор" value={book.author} />
-              {/* Если появится в DTO — отобразится; иначе пропустим */}
               <SpecRow label="Издательство" value={(book as any).publisher} />
               <SpecRow
                 label="Страниц"
@@ -124,7 +137,6 @@ export function BookPage() {
             </Button>
           </div>
 
-          {/* Жанры-«чипсы» (опционально, внизу карточки) */}
           {!!genres.length && (
             <div className="mt-4 flex flex-wrap gap-2">
               {genres.map((g) => (

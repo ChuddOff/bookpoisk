@@ -1,4 +1,4 @@
-import { cn } from "@/shared/index"
+import { cn } from "./cn"
 
 function Skeleton({
   className,

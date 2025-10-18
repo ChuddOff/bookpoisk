@@ -56,7 +56,7 @@ export function SectionFeed({
       )}
 
       {!isLoading && error && (
-        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-4">
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-white p-3">
           <AlertTriangle className="h-5 w-5 text-yellow-600" />
           <div className="text-sm">
             Не удалось загрузить раздел.{" "}
@@ -69,7 +69,7 @@ export function SectionFeed({
       )}
 
       {!isLoading && !error && items.length === 0 && (
-        <div className="rounded-xl border border-line bg-white p-4 text-sm text-slate-600">
+        <div className="rounded-xl border border-line bg-white p-3 text-sm text-slate-600">
           В этом разделе пока пусто.
         </div>
       )}

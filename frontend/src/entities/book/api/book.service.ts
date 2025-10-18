@@ -1,6 +1,10 @@
 // src/entities/book/api/book.service.ts
 import { apiService, type ApiService, ENDPOINT } from "@/shared/api";
-import type { BookResponse, PagedBooksResponse } from "../model";
+import type {
+  BookResponseDto,
+  PagedBooksResponseDto,
+  GenresDto,
+} from "@/entities/book/model";
 
 export type ListParams = {
   page?: number;
@@ -23,11 +27,11 @@ export class BookService {
   }
 
   list(params?: ListParams) {
-    return this.api.get<PagedBooksResponse>(ENDPOINT.books, params);
+    return this.api.get<PagedBooksResponseDto>(ENDPOINT.books, params);
   }
 
   forMe(params?: ForMeParams) {
-    return this.api.get<PagedBooksResponse>(ENDPOINT.bookForMe, params);
+    return this.api.get<PagedBooksResponseDto>(ENDPOINT.bookForMe, params);
   }
 
   like(id: string) {
@@ -36,12 +40,16 @@ export class BookService {
 
   getById(id: string) {
     return this.api
-      .get<BookResponse | any>(`${ENDPOINT.book}/${id}`)
+      .get<BookResponseDto | any>(`${ENDPOINT.book}/${id}`)
       .then((r: any) =>
         r && typeof r === "object" && "data" in r
-          ? (r as BookResponse)
-          : ({ data: r } as BookResponse)
+          ? (r as BookResponseDto)
+          : ({ data: r } as BookResponseDto)
       );
+  }
+
+  genres() {
+    return this.api.get<GenresDto>(ENDPOINT.genres);
   }
 }
 
