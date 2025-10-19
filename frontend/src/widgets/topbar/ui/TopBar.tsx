@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Search, User } from "lucide-react";
+import { Heart, Search } from "lucide-react";
 
 import { Button, Container } from "@/shared/ui";
 import { MobileSearchDialog } from "./MobileSearchDialog";
