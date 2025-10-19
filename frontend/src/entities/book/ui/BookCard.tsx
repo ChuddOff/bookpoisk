@@ -1,5 +1,4 @@
 import * as React from "react";
-
 import type { BookEntity } from "@/entities/book";
 import { LikeButton } from "@/features/favorites";
 import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
@@ -9,12 +8,24 @@ type Props = { book: BookEntity; onLiked?: (id: string) => void };
 export function BookCard({ book }: Props) {
   const [liked, setLiked] = React.useState(false);
 
+  const go = React.useCallback(() => {
+    window.location.href = `/book/${book.id}`;
+  }, [book.id]);
+
+  const onKeyNav = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      go();
+    }
+  };
+
   return (
     <Card
+      role="link"
+      tabIndex={0}
       className="mx-auto flex h-full w-full snap-start cursor-pointer flex-col"
-      onClick={() => {
-        window.location.href = `/book/${book.id}`;
-      }}
+      onClick={go}
+      onKeyDown={onKeyNav}
     >
       <div className="flex select-none flex-col">
         <div className="p-3">
@@ -47,6 +58,8 @@ export function BookCard({ book }: Props) {
               ))}
             </div>
           ) : null}
+
+          {/* Кнопка лайка не пробивает клики наружу — см. обработчики внутри LikeButton */}
           <LikeButton
             id={book.id}
             liked={liked}
@@ -87,7 +100,6 @@ const fallbackDataUri =
     `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="100%" height="100%" fill="#F6F7F9"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#95A1AF" font-size="14">no cover</text></svg>`
   );
 
-// оставим Skeleton для состояний загрузки:
 export function BookCardSkeleton() {
   return (
     <Card className="w-full snap-start">

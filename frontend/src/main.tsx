@@ -4,13 +4,16 @@ import "./index.css";
 import { RouterProvider } from "react-router-dom";
 import { SWRProvider } from "@/app/providers";
 import { AppToaster } from "@/shared/ui";
-import { router } from "./app/router";
+import { AppRouter } from "./app/router";
+import { AuthGateProvider } from "./app/providers/AuthGateProvider";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <SWRProvider>
-      <RouterProvider router={router} />
-      <AppToaster />
+      <AuthGateProvider>
+        <RouterProvider router={AppRouter} />
+        <AppToaster />
+      </AuthGateProvider>
     </SWRProvider>
   </React.StrictMode>
 );

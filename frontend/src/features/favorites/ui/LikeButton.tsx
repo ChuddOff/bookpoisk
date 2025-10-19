@@ -3,6 +3,7 @@ import * as React from "react";
 import { useLikeBook } from "@/entities/book";
 import { Button, cn } from "@/shared/ui";
 import { Heart, Loader2 } from "lucide-react";
+import { useRequireAuth } from "@/app/providers/AuthGateProvider";
 
 type Props = {
   id: string;
@@ -18,7 +19,9 @@ export function LikeButton({
   onLikedChange,
   className,
 }: Props) {
+  const requireAuth = useRequireAuth();
   const like = useLikeBook();
+
   const [pending, setPending] = React.useState(false);
   const [likedLocal, setLikedLocal] = React.useState<boolean | undefined>(
     undefined
@@ -26,8 +29,17 @@ export function LikeButton({
 
   const liked = likedProp ?? likedLocal;
 
-  const handleClick = async () => {
-    if (pending) return;
+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    // важно: останавливаем событие, чтобы родительская карточка/редирект не сработали
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (pending || liked) return;
+
+    // если не авторизован — откроется модалка и действие выполнится после логина (через intent)
+    const ok = requireAuth({ type: "like-book", bookId: id });
+    if (!ok) return;
+
     try {
       setPending(true);
       await like(id);
@@ -45,6 +57,15 @@ export function LikeButton({
       size="default"
       disabled={pending || !!liked}
       onClick={handleClick}
+      // ещё на фазе захвата/нажатия тушим событие — чтоб точно не «протекло»
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       aria-pressed={!!liked}
       className={cn("gap-2", className)}
     >

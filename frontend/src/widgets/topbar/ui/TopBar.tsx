@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { Heart, Search, User } from "lucide-react";
+import { Heart, Search } from "lucide-react";
 
 import { Button, Container } from "@/shared/ui";
 import { MobileSearchDialog } from "./MobileSearchDialog";
 import { SearchBar } from "./SearchBar";
 import React from "react";
+import { CabinetButton } from "@/features/auth/ui";
 
 export function TopBar() {
   const [mOpen, setMOpen] = React.useState(false);
@@ -42,12 +43,7 @@ export function TopBar() {
               </Link>
             </Button>
 
-            <Button variant="outline" asChild className="max-md:px-[11px]">
-              <Link to="/profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden md:inline">Кабинет</span>
-              </Link>
-            </Button>
+            <CabinetButton />
           </div>
         </div>
         <MobileSearchDialog open={mOpen} onOpenChange={setMOpen} />

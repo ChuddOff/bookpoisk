@@ -6,4 +6,10 @@ export const ENDPOINT = {
   book: "/book",
   bookForMe: "/bookForMe",
   likeBook: "/likeBook",
+  auth: {
+    googleStart: "/auth/google/start",
+    callback: "/auth/google/callback",
+    refresh: "/auth/refresh",
+    logout: "/auth/logout",
+  },
 } as const;
