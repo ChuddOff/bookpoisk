@@ -1,9 +1,11 @@
+import gc
 import json
 import os.path
 import re
 import uuid
 from typing import Generator, Dict, Optional
 
+import ijson
 import psycopg2
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -25,9 +27,8 @@ DB_CONFIG = {
 
 def load_book_from_json() -> Generator:
     with open("books.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-
-    yield from data
+        for book in ijson.items(file, "item"):
+            yield book
 
 
 def from_json_to_cache():
@@ -66,7 +67,7 @@ def generate_book_data(book: Dict) -> Optional[Dict]:
     return format_book(answer, book)
 
 
-def format_book(answer: str, book: Dict) -> Dict:
+def format_book(answer: str, book: Dict) -> Optional[Dict]:
     """
     Конвертирует ответ модели в необходимый json формат
     :param answer: ответ модели
@@ -76,7 +77,12 @@ def format_book(answer: str, book: Dict) -> Dict:
 
     form_book = dict()
 
-    answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip())
+    try:
+        answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip())
+
+    except:
+        return None
+
     form_book["id"] = str(uuid.uuid4())
     form_book["title"] = answer["title"]
     form_book["author"] = answer["author"]
@@ -186,22 +192,30 @@ def place_book_in_db(book: Dict):
                 book["year"], book["genre"], book["description"], book["cover"]
             ))
 
-            connection.commit()
+        connection.commit()
 
 
 if __name__ == "__main__":
     from_json_to_cache()  # добавляет в кеш уже обработанные книги
-    length = len([i for i in load_book_from_json()])  # определяет количество всех книг
+    books = [i for i in load_book_from_json()]
+    length = len(books)  # определяет количество всех книг
 
-    for el, book in enumerate(load_book_from_json()):
+    for idx, book in enumerate(books[len(cache):]):
         try:
             if contains_book(book):
                 continue  # если книга есть в кеше, пропускаем
 
             gen_book = generate_book_data(book)
+
+            if not gen_book:
+                continue
+
             save_book_to_json(gen_book)
             # place_book_in_db(gen_book)
 
-            print(f"[{el}/{length}] {el / length * 100:.1f}%")  # выводит процент обработанных книг
+            if idx % 200 == 0:
+                gc.collect()
+
+            print(f"[{len(cache) + idx}/{length}] {(len(cache) + idx) / length * 100:.1f}%")  # процент книг
         except:
             continue  # если ошибка с заполнением книги, пропускаем
