@@ -37,6 +37,9 @@ public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
     if (principal instanceof AppOAuth2UserService.AppUser appUser) {
       userId = appUser.getUserId();
       username = appUser.getUsername();
+    } else if (principal instanceof AppOAuth2UserService.AppOidcUser appUser) {
+      userId = appUser.getUserId();
+      username = appUser.getUsername();
     } else {
       userId = UUID.fromString(input.getName()); // getName() = наш UUID (из AppOAuth2UserService, AppUser)
       username = input.getAttribute("email");

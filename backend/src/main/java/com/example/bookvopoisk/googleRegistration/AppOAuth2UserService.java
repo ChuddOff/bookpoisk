@@ -5,8 +5,14 @@ import com.example.bookvopoisk.models.Users;
 import com.example.bookvopoisk.repository.AuthIdentityRepository;
 import com.example.bookvopoisk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUserInfo;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,60 +23,30 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class AppOAuth2UserService extends DefaultOAuth2UserService {
+public class AppOAuth2UserService extends DefaultOAuth2UserService
+  implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
   private final UserRepository usersRepo;
   private final AuthIdentityRepository authRepo;
+  private final OidcUserService oidcDelegate = new OidcUserService();
 
   @Override
   @Transactional
   public OAuth2User loadUser(OAuth2UserRequest req) {
-    // Родитель (DefaultOAuth2UserService) использует access_token, идёт на userInfoUri
-    // (из application.yml) и возвращает OAuth2User с атрибутами профиля (getAttributes()).
     OAuth2User input = super.loadUser(req);
-
-    String provider = req.getClientRegistration().getRegistrationId(); // "google"
-    Map<String, Object> a = input.getAttributes();
-    String sub = (String) a.get("sub"); // sub — устойчивый ID пользователя у Google
-    String email = (String) a.get("email"); // если у пользователя есть почта
-    Boolean emailVerified = (Boolean) a.getOrDefault("email_verified", null); // если у пользователя есть разрешение
-
-
-    // вызов Spring Data JPA, который делает SQL-запрос к таблице auth_identity (сущность AuthIdentity) по полям provider и provider_user_id.
-    AuthIdentity auth = authRepo.findByProviderAndProviderUserId(provider, sub)
-      .orElseGet(() -> {
-        // Иначе создаем юзера
-        Users u = new Users();
-        String uname = (email != null ? email : "google:" + sub);
-        if (uname.length() > 128) uname = uname.substring(0, 128);
-        u.setUsername(uname);
-        u.setActive(true);
-        usersRepo.save(u);
-
-        // Создаем AuthIdentity, привязанного к этому юзеру
-        AuthIdentity ai = AuthIdentity.builder()
-          .user(u)
-          .provider(provider)
-          .providerUserId(sub)
-          .email(email)
-          .emailVerified(emailVerified)
-          .build();
-        return authRepo.save(ai);
-      });
-
-    Users user = auth.getUser();
-    String username = user.getUsername();
-
-    // Актуализируем данные при повторных логинах, если у Google поменялся email/флаг верификации — обновляем.
-    boolean dirty = false;
-    if (email != null && !email.equals(auth.getEmail())) { auth.setEmail(email); dirty = true; } // при изменении email
-    if (emailVerified != null && emailVerified != auth.getEmailVerified()) { auth.setEmailVerified(emailVerified); dirty = true; } // при изменении флага верификации
-    if (dirty) authRepo.save(auth); // заново сохраняем
-
-    return new AppUser(input, user.getId(), username);
+    String provider = req.getClientRegistration().getRegistrationId();
+    UserContext ctx = syncUser(provider, input.getAttributes());
+    return new AppUser(input, ctx.userId(), ctx.username());
   }
 
-  // Я вернул в Spring экземпляр класса AppUser, в котором все методы переопределены так, как нам надо.
+  @Override
+  @Transactional
+  public OidcUser loadUser(OidcUserRequest req) {
+    OidcUser input = oidcDelegate.loadUser(req);
+    String provider = req.getClientRegistration().getRegistrationId();
+    UserContext ctx = syncUser(provider, input.getAttributes());
+    return new AppOidcUser(input, ctx.userId(), ctx.username());
+  }
 
   // OAuth2User - интерфейс с тремя методами. Все должны быть реализованы, необходимо переопределять Google sub на User.id
   public record AppUser(OAuth2User input, UUID userId, String username) implements OAuth2User {
@@ -87,5 +63,65 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
     public UUID getUserId() { return userId; }
     public String getUsername() { return username; }
   }
-}
 
+  public static class AppOidcUser extends DefaultOidcUser {
+    private final UUID userId;
+    private final String username;
+
+    public AppOidcUser(OidcUser delegate, UUID userId, String username) {
+      super(delegate.getAuthorities(), delegate.getIdToken(), resolveUserInfo(delegate));
+      this.userId = userId;
+      this.username = username;
+    }
+
+    @Override public String getName() { return userId.toString(); }
+    public UUID getUserId() { return userId; }
+    public String getUsername() { return username; }
+
+    private static OidcUserInfo resolveUserInfo(OidcUser delegate) {
+      OidcUserInfo info = delegate.getUserInfo();
+      if (info != null) {
+        return info;
+      }
+      return new OidcUserInfo(delegate.getAttributes());
+    }
+  }
+
+  private UserContext syncUser(String provider, Map<String, Object> attributes) {
+    String sub = (String) attributes.get("sub");
+    if (sub == null) {
+      throw new IllegalStateException("Missing 'sub' attribute in OAuth2 response");
+    }
+    String email = (String) attributes.get("email");
+    Boolean emailVerified = (Boolean) attributes.getOrDefault("email_verified", null);
+
+    AuthIdentity auth = authRepo.findByProviderAndProviderUserId(provider, sub)
+      .orElseGet(() -> {
+        Users u = new Users();
+        String uname = (email != null ? email : provider + ":" + sub);
+        if (uname.length() > 128) uname = uname.substring(0, 128);
+        u.setUsername(uname);
+        u.setActive(true);
+        usersRepo.save(u);
+
+        AuthIdentity ai = AuthIdentity.builder()
+          .user(u)
+          .provider(provider)
+          .providerUserId(sub)
+          .email(email)
+          .emailVerified(emailVerified)
+          .build();
+        return authRepo.save(ai);
+      });
+
+    boolean dirty = false;
+    if (email != null && !email.equals(auth.getEmail())) { auth.setEmail(email); dirty = true; }
+    if (emailVerified != null && !emailVerified.equals(auth.getEmailVerified())) { auth.setEmailVerified(emailVerified); dirty = true; }
+    if (dirty) authRepo.save(auth);
+
+    Users user = auth.getUser();
+    return new UserContext(user.getId(), user.getUsername());
+  }
+
+  private record UserContext(UUID userId, String username) {}
+}
