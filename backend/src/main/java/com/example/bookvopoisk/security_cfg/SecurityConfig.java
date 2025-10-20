@@ -48,7 +48,7 @@ public class SecurityConfig {
       .csrf(csrf -> csrf.disable())
       .cors(cors -> cors.configurationSource(corsConfigurationSource()))
       .authorizeHttpRequests(auth -> auth
-        .requestMatchers("/", "/health").permitAll()
+        .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**", "/books_ai").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/auth/me").permitAll()
         .anyRequest().authenticated()
@@ -84,7 +84,7 @@ public class SecurityConfig {
     cfg.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
     cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
     cfg.setAllowedHeaders(List.of("*"));
-    cfg.setAllowCredentials(false); // без кук; мы используем Bearer
+    cfg.setAllowCredentials(true); // без кук; мы используем Bearer
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", cfg);
     return source;
