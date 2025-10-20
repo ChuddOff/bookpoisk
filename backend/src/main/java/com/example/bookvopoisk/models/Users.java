@@ -10,19 +10,25 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users",
-  uniqueConstraints = @UniqueConstraint(name = "uq_provider_sub", columnNames = "username"))
+@Table(
+  name = "users",
+  uniqueConstraints = @UniqueConstraint(
+    name = "uq_users_username",
+    columnNames = "username"
+  )
+)
 @Getter
 @Setter
 public class Users {
   @Id
   @GeneratedValue
+  @Column(columnDefinition = "uuid")
   private UUID id;
 
-  @Column(nullable = false, length=64)
+  @Column(nullable = false, length=128)
   private String username;
 
-  @Column(nullable = false)
+  @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 
   @CreationTimestamp // аннотация Hibernate, которая автоматически проставляет время создания записи при первом INSERT
