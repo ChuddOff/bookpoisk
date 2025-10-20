@@ -7,7 +7,7 @@ export function WebLayout() {
   return (
     <div className="min-h-screen w-full bg-soft">
       <TopBar />
-      <main className="py-6">
+      <main className="py-6 max-md:py-3">
         <Outlet />
       </main>
     </div>

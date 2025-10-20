@@ -1,11 +1,13 @@
-import useSWR from "swr";
-import type { SWRConfiguration } from "swr";
+import useSWR, { type SWRConfiguration } from "swr";
+
+import type { ListParams } from "@/entities/book/api/book.service";
+import type { PagedBooksResponseDto } from "@/entities/book/model";
 import { bookService } from "../book.service";
-import type { ListParams } from "../book.service"; // ← type-only импорт
 
-import type { PagedBooksResponse } from "../../model/types";
-
-export function useBooks(params?: ListParams, cfg?: SWRConfiguration) {
-  const key = ["books", params] as const;
-  return useSWR<PagedBooksResponse>(key, () => bookService.list(params), cfg);
+export function useBooks(
+  params?: ListParams,
+  cfg?: SWRConfiguration<PagedBooksResponseDto>
+) {
+  const key = params ? ["books", params] : ["books"];
+  return useSWR<PagedBooksResponseDto>(key, () => bookService.list(params), cfg);
 }

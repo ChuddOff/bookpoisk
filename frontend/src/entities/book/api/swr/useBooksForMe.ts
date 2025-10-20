@@ -1,10 +1,13 @@
-import useSWR from "swr";
-import type { SWRConfiguration } from "swr";
-import { bookService } from "../book.service";
-import type { ForMeParams } from "../book.service";
-import type { PagedBooksResponse } from "../../model/types";
+import useSWR, { type SWRConfiguration } from "swr";
 
-export function useBooksForMe(params?: ForMeParams, cfg?: SWRConfiguration) {
-  const key = ["booksForMe", params] as const;
-  return useSWR<PagedBooksResponse>(key, () => bookService.forMe(params), cfg);
+import type { ForMeParams } from "@/entities/book/api/book.service";
+import type { PagedBooksResponseDto } from "@/entities/book/model";
+import { bookService } from "../book.service";
+
+export function useBooksForMe(
+  params?: ForMeParams,
+  cfg?: SWRConfiguration<PagedBooksResponseDto>
+) {
+  const key = params ? ["bookForMe", params] : ["bookForMe"];
+  return useSWR<PagedBooksResponseDto>(key, () => bookService.forMe(params), cfg);
 }

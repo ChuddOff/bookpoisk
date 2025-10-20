@@ -1,6 +1,12 @@
 // src/shared/api/http.service.ts
-import { env } from "@/shared/config/env";
-import { toQueryString, type Query } from "@/shared/lib/query";
+import { env } from "@/shared/config";
+import { toQueryString, type Query } from "@/shared/lib";
+import { session } from "@/shared/auth/session";
+// ⬇️ УБЕРИ импорт ENDPOINT отсюда, чтобы исключить любые циклы
+// import { ENDPOINT } from "@/shared/api/endpoints";
+
+// Явная константа для refresh-эндпоинта
+const REFRESH_PATH = "/auth/refresh";
 
 export class HttpError extends Error {
   status: number;
@@ -15,12 +21,55 @@ export class HttpError extends Error {
 export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export class ApiService {
-  // ⬇️ объявляем поле отдельно (это стирается на этапе типов)
   private readonly baseUrl: string;
 
   constructor(baseUrl: string) {
-    // ⬇️ явное присваивание вместо параметр-свойства
     this.baseUrl = baseUrl;
+  }
+
+  private async tryRefreshAccess(): Promise<boolean> {
+    try {
+      const res = await fetch(this.baseUrl + REFRESH_PATH, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) return false;
+      const data = await res.json().catch(() => null);
+      const access = (data as any)?.access as string | undefined;
+      if (!access) return false;
+      session.set(access);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async requestOnce(
+    path: string,
+    options: {
+      method?: HttpMethod;
+      query?: Query;
+      body?: unknown;
+      headers?: Record<string, string>;
+    } = {}
+  ): Promise<Response> {
+    const { method = "GET", query, body, headers } = options;
+    const url = this.baseUrl + path + toQueryString(query);
+
+    const h: Record<string, string> = {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...headers,
+    };
+
+    const access = session.get();
+    if (access) h.Authorization = `Bearer ${access}`;
+
+    return fetch(url, {
+      method,
+      headers: h,
+      credentials: "include",
+      body: body ? JSON.stringify(body) : undefined,
+    });
   }
 
   async request<T>(
@@ -32,18 +81,14 @@ export class ApiService {
       headers?: Record<string, string>;
     } = {}
   ): Promise<T> {
-    const { method = "GET", query, body, headers } = options;
-    const url = this.baseUrl + path + toQueryString(query);
+    let res = await this.requestOnce(path, options);
 
-    const res = await fetch(url, {
-      method,
-      headers: {
-        ...(body ? { "Content-Type": "application/json" } : {}),
-        ...headers,
-      },
-      credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    if (res.status === 401) {
+      const refreshed = await this.tryRefreshAccess();
+      if (refreshed) {
+        res = await this.requestOnce(path, options);
+      }
+    }
 
     const text = await res.text();
     let data: unknown = undefined;
@@ -56,6 +101,7 @@ export class ApiService {
     if (!res.ok) {
       const message =
         (data as any)?.message ?? res.statusText ?? "Request failed";
+      if (res.status === 401) session.clear();
       throw new HttpError(res.status, message, data);
     }
     return data as T;
@@ -78,5 +124,4 @@ export class ApiService {
   }
 }
 
-// единый инстанс
 export const apiService = new ApiService(env.API_URL);
