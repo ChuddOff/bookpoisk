@@ -58,19 +58,22 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
         return authRepo.save(ai);
       });
 
+    Users user = auth.getUser();
+    String username = user.getUsername();
+
     // Актуализируем данные при повторных логинах, если у Google поменялся email/флаг верификации — обновляем.
     boolean dirty = false;
     if (email != null && !email.equals(auth.getEmail())) { auth.setEmail(email); dirty = true; } // при изменении email
     if (emailVerified != null && emailVerified != auth.getEmailVerified()) { auth.setEmailVerified(emailVerified); dirty = true; } // при изменении флага верификации
     if (dirty) authRepo.save(auth); // заново сохраняем
 
-    return new AppUser(input, auth.getUser().getId());
+    return new AppUser(input, user.getId(), username);
   }
 
   // Я вернул в Spring экземпляр класса AppUser, в котором все методы переопределены так, как нам надо.
 
   // OAuth2User - интерфейс с тремя методами. Все должны быть реализованы, необходимо переопределять Google sub на User.id
-  public record AppUser(OAuth2User input, UUID userId) implements OAuth2User {
+  public record AppUser(OAuth2User input, UUID userId, String username) implements OAuth2User {
 
     // пробрасывает все атрибуты Google (например, sub, email, email_verified
     @Override public Map<String, Object> getAttributes() { return input.getAttributes(); }
@@ -82,6 +85,7 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
 // -------------------------------------
     @Override public String getName() { return userId.toString(); }
     public UUID getUserId() { return userId; }
+    public String getUsername() { return username; }
   }
 }
 
