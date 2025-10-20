@@ -3,6 +3,7 @@ package com.example.bookvopoisk.googleRegistration;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
@@ -26,7 +27,14 @@ public class JwtUtil {
     @Value("${app.auth.jwt.secret}") String secret,
     @Value("${app.auth.jwt.access-ttl-seconds}") long ttlSeconds
   ) {
-    this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    byte[] keyBytes = Decoders.BASE64.decode(secret);   // ← декодируем Base64
+    if (keyBytes.length < 32) {
+      throw new IllegalStateException("JWT secret must be >= 32 bytes after Base64 decoding");
+    }
+    if (ttlSeconds <= 0) {
+      throw new IllegalStateException("access-ttl-seconds must be > 0");
+    }
+    this.key = Keys.hmacShaKeyFor(keyBytes);           // ← используем keyBytes, НЕ secret.getBytes(...)
     this.ttlSeconds = ttlSeconds;
   }
 
