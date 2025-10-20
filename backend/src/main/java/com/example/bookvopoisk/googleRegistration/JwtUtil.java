@@ -27,7 +27,22 @@ public class JwtUtil {
     @Value("${app.auth.jwt.secret}") String secret,
     @Value("${app.auth.jwt.access-ttl-seconds}") long ttlSeconds
   ) {
-    byte[] keyBytes = Decoders.BASE64.decode(secret);   // ← декодируем Base64
+    if (secret == null) {
+      throw new IllegalStateException("JWT secret is not configured (app.auth.jwt.secret)");
+    }
+
+    String normalizedSecret = secret.trim();
+    if (normalizedSecret.isEmpty()) {
+      throw new IllegalStateException("JWT secret must not be blank");
+    }
+
+    byte[] keyBytes;
+    try {
+      keyBytes = Decoders.BASE64.decode(normalizedSecret);   // ← декодируем Base64
+    } catch (IllegalArgumentException ex) {
+      throw new IllegalStateException("JWT secret must be a valid Base64 string", ex);
+    }
+
     if (keyBytes.length < 32) {
       throw new IllegalStateException("JWT secret must be >= 32 bytes after Base64 decoding");
     }
