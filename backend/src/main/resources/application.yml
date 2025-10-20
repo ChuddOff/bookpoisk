@@ -20,7 +20,7 @@ spring:
         registration:
           google: # здесь указали, что регистрация идет через google, поэтому spring security будет использовать все ссылки отсюда
             client-id: ${GOOGLE_CLIENT_ID}
-            client-authentication-method: none
+            client-authentication-method: client_secret_basic
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: [ openid, email, profile ]
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}" # шаблон URL, на который Google вернёт код авторизации, {baseUrl} — твой бэкенд,{registrationId} — идентификатор клиента (google
@@ -31,11 +31,11 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
-  app:
-    cors:
-      allowed-origins: "https://bookpoisk.vercel.app"
-    auth:
-      frontend-success-url: "https://bookpoisk.vercel.app/auth/done"
-      jwt:
-        secret: ${APP_JWT_SECRET}     # длинный случайный ключ (HS256)
-        access-ttl-seconds: 3600
+app:
+  cors:
+    allowed-origins: "https://bookpoisk.vercel.app"
+  auth:
+    frontend-success-url: "https://bookpoisk.vercel.app/auth/done"
+    jwt:
+      secret: ${APP_JWT_SECRET}     # длинный случайный ключ (HS256)
+      access-ttl-seconds: 3600
