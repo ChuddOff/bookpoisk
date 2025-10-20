@@ -64,7 +64,10 @@ public class SecurityConfig {
         // google возвращает данные, которые spring также проверяет на endpoint {baseUrl}/login/oauth2/code/google?code=...&state=...
         // далее spring делаем post запрос, прикладывая client_id, client_secret, code, redirect_uri
         // обратно приходит json и далее spring вызывает метод ниже
-        .userInfoEndpoint(u -> u.userService(oAuth2UserService)) // обработка полученных данных
+        .userInfoEndpoint(u -> u
+          .userService(oAuth2UserService)
+          .oidcUserService(oAuth2UserService)
+        ) // обработка полученных данных
         // успех логина → редирект на фронт с твоим JWT (прописано в JwtLoginSuccessHandler)
         .successHandler(successHandler)
       );
