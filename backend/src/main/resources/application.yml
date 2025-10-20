@@ -33,7 +33,7 @@ spring:
 
 app:
   cors:
-    allowed-origins: "https://bookpoisk.vercel.app"
+    allowed-origins: "https://bookpoisk.vercel.app,http://localhost:5173,http://localhost:3000"
   auth:
     frontend-success-url: "https://bookpoisk.vercel.app/auth/done"
     jwt:

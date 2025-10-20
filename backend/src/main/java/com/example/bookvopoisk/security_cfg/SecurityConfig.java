@@ -84,7 +84,7 @@ public class SecurityConfig {
     cfg.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
     cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
     cfg.setAllowedHeaders(List.of("*"));
-    cfg.setAllowCredentials(false); // без кук; мы используем Bearer
+    cfg.setAllowCredentials(true); // фронт запрашивает с учётом авторизационных заголовков
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", cfg);
     return source;
