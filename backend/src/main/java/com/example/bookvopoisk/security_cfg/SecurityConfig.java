@@ -48,7 +48,7 @@ public class SecurityConfig {
       .csrf(csrf -> csrf.disable())
       .cors(cors -> cors.configurationSource(corsConfigurationSource()))
       .authorizeHttpRequests(auth -> auth
-        .requestMatchers("/", "/health").permitAll()
+        .requestMatchers("/","/books","/book","/genres").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/auth/me").permitAll()
         .anyRequest().authenticated()
