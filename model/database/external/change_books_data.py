@@ -45,9 +45,6 @@ def from_json_to_cache():
 
 
 def save_book_to_json(book: Dict):
-    if contains_book(book):
-        return
-
     cache.add(book["title"])
 
     with open("res_books.jsonl", "a", encoding="utf-8") as file:
@@ -195,12 +192,25 @@ def place_book_in_db(book: Dict):
         connection.commit()
 
 
+def load_checkpoint() -> int:
+    if not os.path.exists("checkpoint.txt"):
+        return 0
+
+    with open("checkpoint.txt", "r", encoding="utf-8") as file:
+        return int(file.read().strip() or 0)
+
+
+def save_checkpoint(index: int):
+    with open("checkpoint.txt", "w", encoding="utf-8") as file:
+        file.write(str(index))
+
+
 if __name__ == "__main__":
     from_json_to_cache()  # добавляет в кеш уже обработанные книги
     books = [i for i in load_book_from_json()]
     length = len(books)  # определяет количество всех книг
 
-    for idx, book in enumerate(books[len(cache):]):
+    for idx, book in enumerate(books[load_checkpoint():]):
         try:
             if contains_book(book):
                 continue  # если книга есть в кеше, пропускаем
@@ -210,12 +220,24 @@ if __name__ == "__main__":
             if not gen_book:
                 continue
 
+            if contains_book(gen_book):
+                continue
+
             save_book_to_json(gen_book)
             # place_book_in_db(gen_book)
 
             if idx % 200 == 0:
                 gc.collect()
 
-            print(f"[{len(cache) + idx}/{length}] {(len(cache) + idx) / length * 100:.1f}%")  # процент книг
+            print(f"[{load_checkpoint()}/{length}] {load_checkpoint() / length * 100:.1f}%")  # процент
         except:
             continue  # если ошибка с заполнением книги, пропускаем
+        finally:
+            save_checkpoint(load_checkpoint() + 1)
+
+
+# TODO:
+# 1. Save state to file (cache, element index)
+# 2. Validation by local LM
+# 3. Remake parser from website
+# 4. Maybe some optimization
