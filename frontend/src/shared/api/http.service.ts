@@ -2,8 +2,6 @@
 import { env } from "@/shared/config";
 import { toQueryString, type Query } from "@/shared/lib";
 import { session } from "@/shared/auth/session";
-// ⬇️ УБЕРИ импорт ENDPOINT отсюда, чтобы исключить любые циклы
-// import { ENDPOINT } from "@/shared/api/endpoints";
 
 // Явная константа для refresh-эндпоинта
 const REFRESH_PATH = "/auth/refresh";

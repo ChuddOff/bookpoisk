@@ -8,7 +8,7 @@ export const ENDPOINT = {
   likeBook: "/likeBook",
   genres: "/genres",
   auth: {
-    googleStart: "/auth/google/start",
+    googleStart: "/oauth2/authorization/google",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
   },
