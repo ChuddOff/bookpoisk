@@ -3,12 +3,15 @@ import json
 import os.path
 import re
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import Generator, Dict, Optional
+from datetime import datetime
 
 import ijson
 import psycopg2
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import ChatCompletionUserMessageParam
 from sentence_transformers import SentenceTransformer, util
 
 from language_model.config import MODEL_URL, MODEL_KEY, MODEL_NAME
@@ -56,11 +59,14 @@ def save_book_to_json(book_: Dict):
 
 def generate_book_data(book_: Dict) -> Optional[Dict]:
     prompt = format_prompt(book_)
+
+    messages: list[ChatCompletionUserMessageParam] = [
+        {"role": "user", "content": prompt}
+    ]
+
     response = client.chat.completions.create(
         model=MODEL_NAME,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
+        messages=messages,
     )
     answer = response.choices[0].message.content
     return format_book(answer, book_)
@@ -96,7 +102,8 @@ def format_book(answer: str, book_: Dict) -> Optional[Dict]:
     try:
         answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip())
 
-    except:
+    except Exception as e_:
+        log_error(f"FORMAT_BOOK: {e_}")
         return None
 
     form_book["id"] = str(uuid.uuid4())
@@ -224,44 +231,101 @@ def save_checkpoint(index: int):
         file.write(str(index))
 
 
+def log_error(message: str, log_file: str = "errors.log") -> None:
+    """
+    Логирует ошибки в файл
+    :param message: сообщение ошибки
+    :param log_file: файл
+    """
+
+    try:
+        with open(log_file, "a", encoding="utf-8") as file:
+            time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            file.write(f"[{time}]: {message}\n")
+
+    except Exception as e_:
+        print(f"[CRITICAL] Ошибка при записи лога: {e_}")
+
+
 if __name__ == "__main__":
     from_json_to_cache()  # добавляет в кеш уже обработанные книги
+
     books = [i for i in load_book_from_json()]
     length = len(books)  # определяет количество всех книг
+    checkpoint = load_checkpoint()
 
-    for idx, book in enumerate(books[load_checkpoint():]):
-        try:
-            if contains_book(book):
-                continue  # если книга есть в кеше, пропускаем
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_gen = None
+        validated_future = None
+        previous_book = None
 
-            gen_book = generate_book_data(book)
+        for idx, book in enumerate(books[checkpoint:], start=checkpoint):
+            try:
+                if contains_book(book):
+                    continue  # если книга есть в кеше, пропускаем
 
-            if not gen_book:
+                # генерация новой книги
+                future_gen = executor.submit(generate_book_data, book)
+
+                # валидация предыдущей книги
+                if previous_book:
+                    try:
+                        valid = validated_future.result()
+                        if valid:
+                            save_book_to_json(previous_book)
+                            # place_book_in_db(previous_book)
+
+                    except Exception as e:
+                        log_error(f"VALIDATE: {e}")
+
+                # получаем результат генерации
+                try:
+                    gen_book = future_gen.result()
+
+                except Exception as e:
+                    log_error(f"GENERATE: {e}")
+                    continue
+
+                if not gen_book:
+                    log_error(f"SKIP: {book}")
+                    continue
+
+                # валидация новой книги
+                validated_future = executor.submit(verify_book_data, book, gen_book)
+                previous_book = gen_book
+
+                # сборка мусора
+                if idx % 200 == 0:
+                    gc.collect()
+
+                # обновление чекпоинта
+                checkpoint += 1
+                save_checkpoint(checkpoint)
+
+                print(f"[{load_checkpoint()}/{length}] {load_checkpoint() / length * 100:.1f}%")  # процент всех книг
+
+            except Exception as e:
+                log_error(f"ERROR: {e}")
                 continue
 
-            if contains_book(gen_book):
-                continue
+        # обработка последней книги
+        if previous_book and validated_future:
+            try:
+                valid = validated_future.result()
 
-            if not verify_book_data(book, gen_book):
-                continue
+                if valid:
+                    save_book_to_json(previous_book)
+                    # place_book_in_db(previous_book)
 
-            save_book_to_json(gen_book)
-            # place_book_in_db(gen_book)
-
-            if idx % 200 == 0:
-                gc.collect()
-
-            print(f"[{load_checkpoint()}/{length}] {load_checkpoint() / length * 100:.1f}%")  # процент
-        except:
-            continue  # если ошибка с заполнением книги, пропускаем
-        finally:
-            save_checkpoint(load_checkpoint() + 1)
+            except Exception as e:
+                log_error(f"VALIDATE: {e}")
 
 
 # TODO:
 # 1. Save state to file (cache, element index)
 # 2. Validation by local LM
 # 3. Async while LM generating
-# 4. Auto start model and LMStudio
-# 5. Remake parser from website
-# 6. Maybe some optimization
+# 4. Logging errors to file
+# 5. Auto start model and LMStudio
+# 6. Remake parser from website
+# 7. Maybe some optimization
