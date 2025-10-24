@@ -2,13 +2,17 @@ import gc
 import json
 import os.path
 import re
+import sys
+import time
 import uuid
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from typing import Generator, Dict, Optional
 from datetime import datetime
 
 import ijson
 import psycopg2
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
@@ -55,6 +59,35 @@ def save_book_to_json(book_: Dict):
     with open("res_books.jsonl", "a", encoding="utf-8") as file:
         json.dump(book_, file, ensure_ascii=False)
         file.write("\n")
+
+
+def start_language_model():
+    subprocess.run(["powershell", "-Command", "lms server start"])
+    time.sleep(1)
+    subprocess.run(["powershell", "-Command", f"lms load {MODEL_NAME} --gpu 0.5 --ttl 1800 --context-length 4096"])
+
+
+def stop_language_model():
+    subprocess.run(["powershell", "-Command", f"lms unload {MODEL_NAME}"])
+    subprocess.run(["powershell", "-Command", "lms server stop"])
+    time.sleep(1)
+    subprocess.run(["powershell", "-Command", r'Stop-Process -Name "LM Studio" -Force'])
+
+
+def ensure_language_model(timeout: int = 15):
+    start = time.time()
+
+    while time.time() - start < timeout:
+        try:
+            resp = requests.get(MODEL_URL, timeout=5)
+            if resp.status_code == 200:
+                return True
+
+        except Exception as e_:
+            log_error(f"START: {e_}")
+            time.sleep(1)
+
+    return False
 
 
 def generate_book_data(book_: Dict) -> Optional[Dict]:
@@ -231,7 +264,7 @@ def save_checkpoint(index: int):
         file.write(str(index))
 
 
-def log_error(message: str, log_file: str = "errors.log") -> None:
+def log_error(message: str, log_file: str = "errors.log"):
     """
     Логирует ошибки в файл
     :param message: сообщение ошибки
@@ -240,30 +273,38 @@ def log_error(message: str, log_file: str = "errors.log") -> None:
 
     try:
         with open(log_file, "a", encoding="utf-8") as file:
-            time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            file.write(f"[{time}]: {message}\n")
+            time_ = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            file.write(f"[{time_}]: {message}\n")
 
     except Exception as e_:
         print(f"[CRITICAL] Ошибка при записи лога: {e_}")
 
 
 if __name__ == "__main__":
+    start_language_model()  # запускает lm studio и загружает модель
+
+    if not ensure_language_model():
+        stop_language_model()
+        sys.exit(0)
+
     from_json_to_cache()  # добавляет в кеш уже обработанные книги
 
     books = [i for i in load_book_from_json()]
     length = len(books)  # определяет количество всех книг
     checkpoint = load_checkpoint()
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    executor = ThreadPoolExecutor(max_workers=2)  # для работы потоков
+
+    try:
         future_gen = None
         validated_future = None
         previous_book = None
 
         for idx, book in enumerate(books[checkpoint:], start=checkpoint):
-            try:
-                if contains_book(book):
-                    continue  # если книга есть в кеше, пропускаем
+            if contains_book(book):
+                continue  # если книга есть в кеше, пропускаем
 
+            try:
                 # генерация новой книги
                 future_gen = executor.submit(generate_book_data, book)
 
@@ -304,6 +345,9 @@ if __name__ == "__main__":
 
                 print(f"[{load_checkpoint()}/{length}] {load_checkpoint() / length * 100:.1f}%")  # процент всех книг
 
+            except KeyboardInterrupt:
+                raise
+
             except Exception as e:
                 log_error(f"ERROR: {e}")
                 continue
@@ -311,14 +355,23 @@ if __name__ == "__main__":
         # обработка последней книги
         if previous_book and validated_future:
             try:
-                valid = validated_future.result()
-
-                if valid:
+                if validated_future.result():
                     save_book_to_json(previous_book)
                     # place_book_in_db(previous_book)
 
             except Exception as e:
                 log_error(f"VALIDATE: {e}")
+
+    except KeyboardInterrupt:
+        save_checkpoint(checkpoint)
+
+    except Exception as e:
+        log_error(f"ERROR: {e}")
+
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+        stop_language_model()
+        sys.exit(0)
 
 
 # TODO:
