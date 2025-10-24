@@ -9,6 +9,7 @@ import ijson
 import psycopg2
 from dotenv import load_dotenv
 from openai import OpenAI
+from sentence_transformers import SentenceTransformer, util
 
 from language_model.config import MODEL_URL, MODEL_KEY, MODEL_NAME
 
@@ -16,6 +17,7 @@ load_dotenv()
 
 cache = set()  # кеш для хранения названий книг, для избежания повторений
 client = OpenAI(base_url=MODEL_URL, api_key=MODEL_KEY)
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')  # эмбеддинг модель для проверки названий книг
 DB_CONFIG = {
     "host": os.getenv("DATABASE_URL"),
     "port": os.getenv("DATABASE_PORT"),
@@ -27,8 +29,8 @@ DB_CONFIG = {
 
 def load_book_from_json() -> Generator:
     with open("books.json", "r", encoding="utf-8") as file:
-        for book in ijson.items(file, "item"):
-            yield book
+        for book_ in ijson.items(file, "item"):
+            yield book_
 
 
 def from_json_to_cache():
@@ -44,16 +46,16 @@ def from_json_to_cache():
             cache.add(json.loads(line)["title"])
 
 
-def save_book_to_json(book: Dict):
-    cache.add(book["title"])
+def save_book_to_json(book_: Dict):
+    cache.add(book_["title"])
 
     with open("res_books.jsonl", "a", encoding="utf-8") as file:
-        json.dump(book, file, ensure_ascii=False)
+        json.dump(book_, file, ensure_ascii=False)
         file.write("\n")
 
 
-def generate_book_data(book: Dict) -> Optional[Dict]:
-    prompt = format_prompt(book)
+def generate_book_data(book_: Dict) -> Optional[Dict]:
+    prompt = format_prompt(book_)
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[
@@ -61,14 +63,31 @@ def generate_book_data(book: Dict) -> Optional[Dict]:
         ]
     )
     answer = response.choices[0].message.content
-    return format_book(answer, book)
+    return format_book(answer, book_)
 
 
-def format_book(answer: str, book: Dict) -> Optional[Dict]:
+def verify_book_data(book_: Dict, gen_book_: Dict, threshold: float = 0.85) -> bool:
+    """
+    Проверяет книгу на верность названия
+    :param book_: книга с сайта
+    :param gen_book_: сгенерированная книга
+    :param threshold: коэффициент совпадения
+    """
+
+    emb1 = embedding_model.encode(book_["title"].replace("Книга ", "").split(" (")[0].strip(), convert_to_tensor=True)
+    emb2 = embedding_model.encode(gen_book_["title"], convert_to_tensor=True)
+
+    # считаем косинусное сходство
+    similarity = util.cos_sim(emb1, emb2).item()
+
+    return similarity >= threshold
+
+
+def format_book(answer: str, book_: Dict) -> Optional[Dict]:
     """
     Конвертирует ответ модели в необходимый json формат
     :param answer: ответ модели
-    :param book: книга, которая была изначально (до генерации)
+    :param book_: книга, которая была изначально (до генерации)
     :return: json форматированную книгу
     """
 
@@ -86,25 +105,25 @@ def format_book(answer: str, book: Dict) -> Optional[Dict]:
     form_book["year"] = answer["year"]
     form_book["description"] = answer["description"] if "description" in answer else None
     form_book["genre"] = answer["genre"]
-    form_book["cover"] = book["cover_url"]
-    form_book["pages"] = book["pages"]
+    form_book["cover"] = book_["cover_url"]
+    form_book["pages"] = book_["pages"]
 
     return form_book
 
 
-def format_prompt(book: Dict) -> str:
+def format_prompt(book_: Dict) -> str:
     """
     Создает специальный промпт из данных запаршенной книги
-    :param book: книга изначально (до генерации)
+    :param book_: книга изначально (до генерации)
     :return: промпт
     """
 
-    format_book = dict()
-    format_book["title"] = book["title"].replace("Книга ", "").split(" (")[0].strip()
-    format_book["author"] = book["author"].strip()
-    format_book["year"] = book["year"]
-    format_book["genre"] = book["genre"]
-    format_book["description"] = book["description"]
+    format_book_ = dict()
+    format_book_["title"] = book_["title"].replace("Книга ", "").split(" (")[0].strip()
+    format_book_["author"] = book_["author"].strip()
+    format_book_["year"] = book_["year"]
+    format_book_["genre"] = book_["genre"]
+    format_book_["description"] = book_["description"]
 
     return f"""
         Ты — помощник, который нормализует данные о книгах.
@@ -158,26 +177,26 @@ def format_prompt(book: Dict) -> str:
         }}
         
         Теперь обработай следующую книгу:
-        {json.dumps(format_book, ensure_ascii=False, indent=2)}
+        {json.dumps(format_book_, ensure_ascii=False, indent=2)}
         """
 
 
-def contains_book(book: Dict) -> bool:
-    title = book["title"].replace("Книга ", "").split(" (")[0].strip()
+def contains_book(book_: Dict) -> bool:
+    title = book_["title"].replace("Книга ", "").split(" (")[0].strip()
     return title in cache
 
 
-def place_book_in_db(book: Dict):
+def place_book_in_db(book_: Dict):
     """
     Записывает книгу в бд
-    :param book: сгенеренная и отформатированная книга
+    :param book_: сгенеренная и отформатированная книга
     """
 
     with psycopg2.connect(**DB_CONFIG) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
-                (book["title"], book["author"])
+                (book_["title"], book_["author"])
             )
 
             if cursor.fetchone():
@@ -185,8 +204,8 @@ def place_book_in_db(book: Dict):
 
             cursor.execute("""INSERT INTO books (id, title, author, pages, year, genre, description, cover)
                                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", (
-                book["id"], book["title"], book["author"], book["pages"],
-                book["year"], book["genre"], book["description"], book["cover"]
+                book_["id"], book_["title"], book_["author"], book_["pages"],
+                book_["year"], book_["genre"], book_["description"], book_["cover"]
             ))
 
         connection.commit()
@@ -223,6 +242,9 @@ if __name__ == "__main__":
             if contains_book(gen_book):
                 continue
 
+            if not verify_book_data(book, gen_book):
+                continue
+
             save_book_to_json(gen_book)
             # place_book_in_db(gen_book)
 
@@ -239,5 +261,7 @@ if __name__ == "__main__":
 # TODO:
 # 1. Save state to file (cache, element index)
 # 2. Validation by local LM
-# 3. Remake parser from website
-# 4. Maybe some optimization
+# 3. Async while LM generating
+# 4. Auto start model and LMStudio
+# 5. Remake parser from website
+# 6. Maybe some optimization
