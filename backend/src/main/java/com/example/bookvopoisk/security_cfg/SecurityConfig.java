@@ -58,7 +58,7 @@ public class SecurityConfig {
 
       // куки JSESSIONID не нужны; контекст аутентификации живёт ровно в рамках запроса и создаётся заново для каждого запроса на основе токена.
       // отключаем их
-      .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
       .oauth2Login(oauth -> oauth // включается весь механизм регистрации через Google, редирект на Google по считанным из application.yml данным
         // google возвращает данные, которые spring также проверяет на endpoint {baseUrl}/login/oauth2/code/google?code=...&state=...
