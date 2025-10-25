@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -64,8 +65,8 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
 
     // Актуализируем данные при повторных логинах, если у Google поменялся email/флаг верификации — обновляем.
     boolean dirty = false;
-    if (email != null && !email.equals(auth.getEmail())) { auth.setEmail(email); dirty = true; } // при изменении email
-    if (emailVerified != null && emailVerified != auth.getEmailVerified()) { auth.setEmailVerified(emailVerified); dirty = true; } // при изменении флага верификации
+    if (!Objects.equals(email, auth.getEmail())) { auth.setEmail(email); dirty = true; } // при изменении email
+    if (!Objects.equals(emailVerified, auth.getEmailVerified())) { auth.setEmailVerified(emailVerified); dirty = true; } // при изменении флага верификации
     if (dirty) authRepo.save(auth); // заново сохраняем
 
     return new AppUser(input, auth.getUser().getId());
