@@ -41,7 +41,8 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <scope>runtime</scope>
+      <version>42.7.4</version> <!-- можно убрать, если полагаешься на BOM spring-boot -->
+      <scope>runtime</scope>     <!-- или убери scope вовсе -->
     </dependency>
     <dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -61,11 +62,6 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
