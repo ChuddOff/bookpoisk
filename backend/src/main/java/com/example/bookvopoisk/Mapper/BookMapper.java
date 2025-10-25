@@ -17,36 +17,34 @@ public class BookMapper {
       e.getTitle(),
       e.getAuthor(),
       e.getYear(),
-      e.getGenre(),
+      e.getGenres(),
       e.getPages(),
       e.getDescription(),
-      e.getCover(),
-      String.join(",", e.getPhotos())
+      e.getCover()
     );
   }
 
   public static Book fromCreate(BookCreateRequest r) {
     Book b = new Book();
     applyUpdate(b,  r.title(), r.author(), r.year(), r.genre(), r.pages(),
-      r.description(), r.cover(), r.photos());
+      r.description(), r.cover());
     return b;
   }
 
   public static void applyUpdate(Book b, BookUpdateRequest r) {
     applyUpdate(b, r.title(), r.author(), r.year(), r.genre(), r.pages(),
-      r.description(), r.cover(), r.photos());
+      r.description(), r.cover());
   }
 
-  private static void applyUpdate (Book b, String title, String author, String year, //
-                                   String genre, String pages, String description,
-                                   String cover, List<String> photos) {
+  private static void applyUpdate (Book b, String title, String author, Integer year, //
+                                   List<String> genre, Integer pages, String description,
+                                   String cover) {
     if (title != null) b.setTitle(title);
     if (author != null) b.setAuthor(author);
     if (year != null) b.setYear(year);
-    if (genre != null) b.setGenre(genre);
+    if (genre != null) b.getGenres();
     if (pages != null) b.setPages(pages);
     if (description != null) b.setDescription(description);
     if (cover != null) b.setCover(cover);
-    if (photos != null) b.setPhotos(photos);
   }
 }

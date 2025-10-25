@@ -2,7 +2,7 @@ package com.example.bookvopoisk.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -31,21 +31,22 @@ public class Book {
   @Column(nullable = false, columnDefinition = "text")
   private String author;
 
-  private String year;
+  private Integer year;
 
   @Column(columnDefinition = "text")
   private String description;
 
-  private String genre;
+  @ElementCollection
+  @CollectionTable(
+    name = "book_genres",
+    joinColumns = @JoinColumn(name = "book_id"),
+    uniqueConstraints = @UniqueConstraint(columnNames = {"book_id", "genre"})
+  )
+  @Column(name = "genre", nullable = false)
+  private List<String> genres = new ArrayList<>();
+
   private String cover;
 
-  @ElementCollection
-  @CollectionTable(name = "book_photos", joinColumns = @JoinColumn(name = "book_id"))
-  @Column(name = "url")
-  private List<String> photos = new ArrayList<>();
-
-  // Строка — ок, но сортировка будет лексикографической.
-  // Можно тоже повесить валидатор, если нужны только цифры.
-  @Pattern(regexp = "^\\d+$", message = "Pages must be digits")
-  private String pages;
+  @Positive
+  private Integer pages;
 }

@@ -84,4 +84,3 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
     public UUID getUserId() { return userId; }
   }
 }
-
