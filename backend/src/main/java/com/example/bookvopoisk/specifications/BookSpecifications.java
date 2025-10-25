@@ -1,10 +1,11 @@
 package com.example.bookvopoisk.specifications;
 
 import com.example.bookvopoisk.models.Book;
-import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collection;
+import java.util.List;
 
 public class BookSpecifications { // Фабрика кусочков Where, которые я впоследствии применю в findALL от JpaSpecificationExecutor
   private BookSpecifications() {
@@ -13,10 +14,41 @@ public class BookSpecifications { // Фабрика кусочков Where, ко
   public static Specification<Book> titleContains(String q) {
     return (root, cq, cb) -> {
       if (q == null || q.isBlank()) return null;
-      String p = "%" + q.toLowerCase().trim() + "%";
-      return cb.like(cb.lower(root.get("title")), p);
+      String needle = q.toLowerCase().trim();
+      // Это интерфейс, который расширяет Selection<T>.
+      // Значит, любое Expression<T> можно и выбирать (SELECT expr), и использовать в WHERE/ORDER BY.
+      // Значит, любое Expression<T> можно и выбирать (SELECT expr), и использовать в WHERE/ORDER BY.
+      Expression<String> title = cb.lower(root.get("title"));
+
+      // Паттерны
+      String start = needle + "%";
+      String end   = "%" + needle;
+      String any   = "%" + needle + "%";
+
+      // Фильтр: хотя бы где-то встречается
+      Predicate where = cb.like(title, any);
+
+      Expression<Integer> rank =
+        cb.selectCase()
+        .when(cb.like(title, start), 0)
+        .when(
+          cb.and(
+            cb.like(title, any),
+            cb.notLike(title, start),
+            cb.notLike(title, end)
+          ), 1)
+        .when(cb.like(title, end), 2)
+        .otherwise(3).as(Integer.class);
+
+      // Вспомогательная сортировка: чем левее вхождение — тем раньше
+      Expression<Integer> pos = cb.locate(title, needle);
+
+      cq.orderBy(cb.asc(rank), cb.asc(pos), cb.asc(title));
+
+      return where;
     };
   }
+
 
   /** Фильтр по нескольким авторам (case-insensitive). */
   public static Specification<Book> authorInIgnoreCase(Collection<String> authors) {
@@ -31,16 +63,23 @@ public class BookSpecifications { // Фабрика кусочков Where, ко
     };
   }
 
-  /** Фильтр по нескольким жанрам (case-insensitive). */
-  public static Specification<Book> genreInIgnoreCase(Collection<String> genres) {
+  /** Книга содержит хотя бы один из переданных жанров (case-insensitive). */
+  public static Specification<Book> genresAnyIgnoreCase(Collection<String> genres) {
     return (root, cq, cb) -> {
       if (genres == null || genres.isEmpty()) return null;
-      var lowerGenre = cb.lower(root.get("genre"));
-      return genres.stream()
+
+      Join<Book, String> g = root.join("genres", JoinType.INNER);
+
+      List<String> wanted = genres.stream()
         .filter(s -> s != null && !s.isBlank())
-        .map(s -> cb.equal(lowerGenre, s.toLowerCase().trim()))
-        .reduce(cb::or)
-        .orElse(null);
+        .map(s -> s.toLowerCase().trim())
+        .distinct()
+        .toList();
+      if (wanted.isEmpty()) return null;
+      // Перевод полученных значений жанра в нижний регистр, проверка, что жанр входит в wanted
+      Predicate p = cb.lower(g).in(wanted); // Predicate в JPA Criteria — это логическое выражение (булевское), т.е. «условие», которое пойдёт в WHERE / HAVING / ON.
+      cq.distinct(true); // Сущности не дублируются при выдаче
+      return p;
     };
   }
 

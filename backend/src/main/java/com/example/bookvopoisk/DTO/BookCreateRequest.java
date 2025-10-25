@@ -7,10 +7,8 @@ import java.util.List;
 public record BookCreateRequest ( // данные присылает фронт для создания книги
   @NotBlank String title,
   @NotBlank String author,
-  String year,
-  String genre,
-  String pages,
+  Integer year, List<String> genre,
+  Integer pages,
   String description,
-  String cover,
-  List<String> photos
+  String cover
 ) {}

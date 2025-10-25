@@ -50,7 +50,7 @@ public class BookController {
     Specification<Book> spec = Specification.allOf(
       BookSpecifications.titleContains(q),
       BookSpecifications.authorInIgnoreCase(authors),
-      BookSpecifications.genreInIgnoreCase(genres),
+      BookSpecifications.genresAnyIgnoreCase(genres),
       BookSpecifications.yearBetween(yearFrom, yearTo),
       BookSpecifications.pageBetween(pageFrom, pageTo)
     );
