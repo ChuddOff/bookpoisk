@@ -39,17 +39,21 @@ public class AppOAuth2UserService extends DefaultOAuth2UserService {
     // вызов Spring Data JPA, который делает SQL-запрос к таблице auth_identity (сущность AuthIdentity) по полям provider и provider_user_id.
     AuthIdentity auth = authRepo.findByProviderAndProviderUserId(provider, sub)
       .orElseGet(() -> {
-        // Иначе создаем юзера
-        Users u = new Users();
         String uname = (email != null ? email : "google:" + sub);
         if (uname.length() > 128) uname = uname.substring(0, 128);
-        u.setUsername(uname);
-        u.setActive(true);
-        usersRepo.save(u);
 
-        // Создаем AuthIdentity, привязанного к этому юзеру
+        // Если пользователь уже зарегистрирован вручную (username=email),
+        // переиспользуем его запись вместо попытки создать дубликат.
+        Users user = usersRepo.findByUsername(uname)
+          .orElseGet(() -> {
+            Users fresh = new Users();
+            fresh.setUsername(uname);
+            fresh.setActive(true);
+            return usersRepo.save(fresh);
+          });
+
         AuthIdentity ai = AuthIdentity.builder()
-          .user(u)
+          .user(user)
           .provider(provider)
           .providerUserId(sub)
           .email(email)
