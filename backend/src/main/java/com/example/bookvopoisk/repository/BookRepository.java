@@ -34,10 +34,10 @@ public interface BookRepository extends JpaRepository<Book, UUID>, JpaSpecificat
   Page<String> suggestAuthors(@Param("prefix") String prefix, Pageable pageable);
 
   @Query("""
-        select distinct trim(b.genre)
-        from Book b
-        where b.genre is not null and b.genre <> ''
-        order by trim(b.genre) asc
+        select distinct trim(g)
+                  from Book b join b.genres g
+                  where g is not null and g <> ''
+                  order by trim(g) asc
   """)
   List<String> findAllGenres();
 
