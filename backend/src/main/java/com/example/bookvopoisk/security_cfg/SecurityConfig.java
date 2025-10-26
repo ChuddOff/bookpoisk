@@ -50,6 +50,7 @@ public class SecurityConfig {
       .csrf(csrf -> csrf.disable())
       .cors(cors -> cors.configurationSource(corsConfigurationSource()))
       .authorizeHttpRequests(auth -> auth
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**", "/books_ai").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/auth/info").permitAll()
@@ -86,10 +87,14 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     var cfg = new CorsConfiguration();
-    cfg.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
+    cfg.setAllowedOrigins(List.of(
+      "https://bookpoisk.vercel.app"
+    ));
     cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-    cfg.setAllowedHeaders(List.of("*"));
-    cfg.setAllowCredentials(true); // без кук; мы используем Bearer
+    // явно разреши Authorization
+    cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
+    // ничего не читаем из Set-Cookie → credentials НЕ нужны
+    cfg.setAllowCredentials(false);
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", cfg);
     return source;
