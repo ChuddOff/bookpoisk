@@ -7,7 +7,7 @@ export const ENDPOINT = {
   bookForMe: "/bookForMe",
   likeBook: "/likeBook",
   auth: {
-    googleStart: "/auth/google/start",
+    googleStart: "/oauth2/authorization/google",
     callback: "/auth/google/callback",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
