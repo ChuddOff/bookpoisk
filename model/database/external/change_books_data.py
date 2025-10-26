@@ -7,7 +7,8 @@ import time
 import uuid
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from typing import Generator, Dict, Optional
+from functools import lru_cache
+from typing import Generator, Dict, Optional, TypedDict, Callable, Any
 from datetime import datetime
 
 import ijson
@@ -37,15 +38,51 @@ DB_CONFIG = {
     "user": os.getenv("DATABASE_USER"),
     "password": os.getenv("DATABASE_PASSWORD")
 }
+CHECKPOINT = "checkpoint.txt"
+ERR = "errors.log"
+RESULT = "res_books2.jsonl"
+BOOKS = "books.json"
+
+
+class Book(TypedDict):
+    id: Optional[str]
+    title: str
+    author: Optional[str]
+    year: Optional[int]
+    description: Optional[str]
+    genre: Optional[list[str]]
+    cover: Optional[str]
+    pages: Optional[int]
+
+
+def retry(func: Callable) -> Callable:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        for i in range(3):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                log_error(f"Exception while trying to {func.__name__}: {e}")
+                time.sleep(1)
+
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def get_db_connection() -> Optional[psycopg2.connect]:
+    try:
+        return psycopg2.connect(**DB_CONFIG)
+    except psycopg2.Error as e:
+        log_error(f"DATABASE: {e}")
+        raise KeyboardInterrupt
 
 
 def load_book_from_json() -> Generator:
-    with open("books.json", "r", encoding="utf-8") as file:
+    with open(BOOKS, "r", encoding="utf-8") as file:
         for book_ in ijson.items(file, "item"):
             yield book_
 
 
-def from_json_to_cache():
+def load_json_cache() -> None:
     """
     Добавляет в кеш уже обработанные книги
     """
@@ -60,12 +97,12 @@ def from_json_to_cache():
             embedding_cache.append(embedding_book(book_))
 
 
-def save_book_to_json(book_: Dict):
-    cache.add(book_["title"])
-    embedding_cache.append(embedding_book(book_))
+def save_book_to_json(raw_book: Book) -> None:
+    cache.add(raw_book["title"])
+    embedding_cache.append(embedding_book(raw_book["title"]))
 
-    with open("res_books2.jsonl", "a", encoding="utf-8") as file:
-        json.dump(book_, file, ensure_ascii=False)
+    with open(RESULT, "a", encoding="utf-8") as file:
+        json.dump(raw_book, file, ensure_ascii=False)
         file.write("\n")
 
 
@@ -85,7 +122,7 @@ def parse_catalog_html(html: str) -> list[str]:
     return [f"https://www.chitai-gorod.ru{i.find('a').get('href')}" for i in items]
 
 
-def parse_book_html(html: str) -> Optional[dict]:
+def parse_book_html(html: str) -> Optional[Book]:
     if not html:
         return None
 
@@ -127,15 +164,7 @@ def parse_book_html(html: str) -> Optional[dict]:
             case "Жанры":
                 genre = content
 
-    return {
-        "title": title,
-        "author": author,
-        "year": year,
-        "description": description,
-        "genre": genre,
-        "cover": cover,
-        "pages": pages,
-    }
+    return Book(id=None, title=title, author=author, year=year, description=description, genre=genre, cover=cover, pages=pages)
 
 
 def parse_count_of_books(html: str) -> Optional[int]:
@@ -158,7 +187,7 @@ def parse_count_of_books(html: str) -> Optional[int]:
     return None
 
 
-def start_language_model():
+def start_language_model() -> None:
     try:
         subprocess.run(["powershell", "-Command", "lms server start"])
         time.sleep(5)
@@ -167,7 +196,7 @@ def start_language_model():
         log_error(f"START MODEL: {e_}")
 
 
-def stop_language_model():
+def stop_language_model() -> None:
     try:
         subprocess.run(["powershell", "-Command", f"lms unload {MODEL_NAME}"])
         subprocess.run(["powershell", "-Command", "lms server stop"])
@@ -195,31 +224,37 @@ def ensure_language_model(timeout: int = 15) -> bool:
     return False
 
 
-def generate_book_data(book_: Dict) -> Optional[Dict]:
-    prompt = format_prompt(book_)
+@retry
+def generate_book_data(raw_book: Book) -> Optional[Dict]:
+    prompt = format_prompt(raw_book)
 
     messages: list[ChatCompletionUserMessageParam] = [
         {"role": "user", "content": prompt}
     ]
 
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-    )
-    answer = response.choices[0].message.content
-    return format_book(answer, book_)
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+        )
+        answer = response.choices[0].message.content
+        return format_book(answer, raw_book)
+
+    except Exception as e_:
+        log_error(f"GENERATION: {e_}")
+        return None
 
 
-def verify_book_data(book_: Dict, gen_book_: Dict, threshold: float = 0.85) -> bool:
+def verify_book_data(raw_book: Book, generated_book: Book, threshold: float = 0.85) -> bool:
     """
     Проверяет книгу на верность названия
-    :param book_: книга с сайта
-    :param gen_book_: сгенерированная книга
+    :param raw_book: книга с сайта
+    :param generated_book: сгенерированная книга
     :param threshold: коэффициент совпадения
     """
 
-    emb1 = embedding_book(book_)
-    emb2 = embedding_book(gen_book_)
+    emb1 = embedding_book(normalize_title(raw_book))
+    emb2 = embedding_book(normalize_title(generated_book))
 
     # считаем косинусное сходство
     similarity = util.cos_sim(emb1, emb2).item()
@@ -227,53 +262,54 @@ def verify_book_data(book_: Dict, gen_book_: Dict, threshold: float = 0.85) -> b
     return similarity >= threshold
 
 
-def embedding_book(book_: Dict):
-    emb = embedding_model.encode(normalize_title(book_["title"]), convert_to_tensor=True)
+@lru_cache(maxsize=10_000)
+def embedding_book(raw_book: str):
+    emb = embedding_model.encode(raw_book, convert_to_tensor=True)
     return emb
 
 
-def format_book(answer: str, book_: Dict) -> Optional[Dict]:
+def format_book(answer: str, raw_book: Book) -> Optional[Book]:
     """
     Конвертирует ответ модели в необходимый json формат
     :param answer: ответ модели
-    :param book_: книга, которая была изначально (до генерации)
+    :param raw_book: книга, которая была изначально (до генерации)
     :return: json форматированную книгу
     """
 
-    form_book = dict()
-
     try:
         answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip())
+
+        r_book = Book(id=None, title="", author=None, year=None, description=None, genre=None, cover=None, pages=None)
+
+        r_book["id"] = str(uuid.uuid4())
+        r_book["title"] = answer["title"]
+        r_book["author"] = answer["author"]
+        r_book["year"] = int(answer["year"])
+        r_book["description"] = answer["description"] if "description" in answer else None
+        r_book["genre"] = answer["genre"].split(", ")
+        r_book["cover"] = raw_book["cover"]
+        r_book["pages"] = int(raw_book["pages"])
+
+        return r_book
 
     except Exception as e_:
         log_error(f"FORMAT_BOOK: {e_}")
         return None
 
-    form_book["id"] = str(uuid.uuid4())
-    form_book["title"] = answer["title"]
-    form_book["author"] = answer["author"]
-    form_book["year"] = int(answer["year"])
-    form_book["description"] = answer["description"] if "description" in answer else None
-    form_book["genre"] = answer["genre"].split(", ")
-    form_book["cover"] = book_["cover"]
-    form_book["pages"] = int(book_["pages"])
 
-    return form_book
-
-
-def format_prompt(book_: Dict) -> str:
+def format_prompt(raw_book: Book) -> str:
     """
     Создает специальный промпт из данных запаршенной книги
-    :param book_: книга изначально (до генерации)
+    :param raw_book: книга изначально (до генерации)
     :return: промпт
     """
 
     format_book_ = dict()
-    format_book_["title"] = normalize_title(book_["title"])
-    format_book_["author"] = book_["author"].strip()
-    format_book_["year"] = book_["year"]
-    format_book_["genre"] = book_["genre"]
-    format_book_["description"] = book_["description"]
+    format_book_["title"] = normalize_title(raw_book)
+    format_book_["author"] = raw_book["author"].strip()
+    format_book_["year"] = raw_book["year"]
+    format_book_["genre"] = raw_book["genre"]
+    format_book_["description"] = raw_book["description"]
 
     return f"""
         Ты — помощник, который нормализует данные о книгах.
@@ -331,16 +367,16 @@ def format_prompt(book_: Dict) -> str:
         """
 
 
-def normalize_title(title: str) -> str:
-    if not title:
+def normalize_title(raw_book: Book) -> str:
+    if not raw_book["title"]:
         return ""
-    t = title.replace("Книга ", "")
+    t = raw_book["title"].replace("Книга ", "")
     t = re.split(r"\s*\(|[:\-–—]\s*", t)[0]
     return t.strip()
 
 
-def book_in_cache_embedding(book_: dict, threshold: float = 0.85) -> bool:
-    book_emb = embedding_book(book_)
+def book_in_cache_embedding(raw_book: Book, threshold: float = 0.85) -> bool:
+    book_emb = embedding_book(raw_book["title"])
     list_emb = np.array(embedding_cache, dtype=np.float32)
 
     if list_emb.size == 0:
@@ -354,65 +390,65 @@ def book_in_cache_embedding(book_: dict, threshold: float = 0.85) -> bool:
     return False
 
 
-def book_in_cache_title(book_: dict) -> bool:
-    title = normalize_title(book_["title"])
+def book_in_cache_title(raw_book: Book) -> bool:
+    title = normalize_title(raw_book)
     return title in cache
 
 
-def contains_book(book_: Dict) -> bool:
-    if book_in_cache_title(book_):
+def contains_book(raw_book: Book) -> bool:
+    if book_in_cache_title(raw_book):
         return True
 
-    if book_in_cache_embedding(book_):
+    if book_in_cache_embedding(raw_book):
         return True
 
     return False
 
 
-def skip(log_message: str, checkpoint_: int):
+def skip(log_message: str, checkpoint_: int) -> None:
     log_error(log_message)
     save_checkpoint(checkpoint_)
 
 
-def save_book_to_db(book_: Dict):
+def save_book_to_db(raw_book: Book) -> None:
     """
     Записывает книгу в бд
-    :param book_: сгенеренная и отформатированная книга
+    :param raw_book: сгенеренная и отформатированная книга
     """
 
-    with psycopg2.connect(**DB_CONFIG) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
-                (book_["title"], book_["author"])
-            )
+    connection = get_db_connection()
+    connection.autocommit = True
 
-            if cursor.fetchone():
-                return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
+            (raw_book["title"], raw_book["author"])
+        )
 
-            cursor.execute("""INSERT INTO books (id, title, author, pages, year, genre, description, cover)
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", (
-                book_["id"], book_["title"], book_["author"], book_["pages"],
-                book_["year"], book_["genre"], book_["description"], book_["cover"]
-            ))
+        if cursor.fetchone():
+            return
 
-        connection.commit()
+        cursor.execute("""INSERT INTO books (id, title, author, pages, year, genre, description, cover)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", (
+            raw_book["id"], raw_book["title"], raw_book["author"], raw_book["pages"],
+            raw_book["year"], json.dumps(raw_book["genre"], ensure_ascii=False), raw_book["description"], raw_book["cover"]
+        ))
 
 
 def load_checkpoint() -> int:
-    if not os.path.exists("checkpoint.txt"):
+    if not os.path.exists(CHECKPOINT):
         return 0
 
-    with open("checkpoint.txt", "r", encoding="utf-8") as file:
+    with open(CHECKPOINT, "r", encoding="utf-8") as file:
         return int(file.read().strip() or 0)
 
 
-def save_checkpoint(index: int):
-    with open("checkpoint.txt", "w", encoding="utf-8") as file:
+def save_checkpoint(index: int) -> None:
+    with open(CHECKPOINT, "w", encoding="utf-8") as file:
         file.write(str(index))
 
 
-def log_error(message: str, log_file: str = "errors.log"):
+def log_error(message: str, log_file: str = ERR) -> None:
     """
     Логирует ошибки в файл
     :param message: сообщение ошибки
@@ -428,7 +464,7 @@ def log_error(message: str, log_file: str = "errors.log"):
         print(f"[CRITICAL] Ошибка при записи лога: {e_}")
 
 
-if __name__ == '__main__':
+def main() -> None:
     l_page = -1  # нужен как флаг для парсинга каждой новой страницы
     books_urls = []
 
@@ -449,7 +485,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     checkpoint = load_checkpoint()  # подгружаем чекпоинт из файла
-    from_json_to_cache()  # подгружаем кэш из json
+    load_json_cache()  # подгружаем кэш из json
 
     executor = ThreadPoolExecutor(max_workers=2)
 
@@ -529,7 +565,7 @@ if __name__ == '__main__':
                 # обновляем чекпоинт
                 checkpoint += 1
                 save_checkpoint(checkpoint)
-                print(f"[{checkpoint}/{count_of_books}] {checkpoint/count_of_books*100:.1f}%")
+                print(f"[{checkpoint}/{count_of_books}] {checkpoint / count_of_books * 100:.1f}%")
 
             except KeyboardInterrupt:
                 raise
@@ -556,9 +592,13 @@ if __name__ == '__main__':
         log_error(f"FATAL ERROR: {str(e)}")
 
     finally:
-        executor.shutdown(wait=False,cancel_futures=True)
+        executor.shutdown(wait=False, cancel_futures=True)
         stop_language_model()
         sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
 
 # TODO:
 # 1. Save state to file (cache, element index)
