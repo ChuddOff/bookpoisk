@@ -25,13 +25,18 @@ spring:
             client-authentication-method: client_secret_basic
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: [ openid, email, profile ]
-            redirect-uri: "https://bookpoisk-idwp.onrender.com/login/oauth2/code/google" # шаблон URL, на который Google вернёт код авторизации, {baseUrl} — твой бэкенд,{registrationId} — идентификатор клиента (google
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}" # шаблон URL, на который Google вернёт код авторизации, {baseUrl} — твой бэкенд,{registrationId} — идентификатор клиента (google
         provider:
           google:
             authorization-uri: https://accounts.google.com/o/oauth2/v2/auth # эндпоинт авторизации Google, куда Spring отправляет пользователя для логина/согласия.
             token-uri: https://oauth2.googleapis.com/token # сюда делается Post-запрос, с последующим получением JSON
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security.oauth2: DEBUG
 
 app:
   cors:
