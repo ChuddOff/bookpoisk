@@ -9,7 +9,7 @@ export const ENDPOINT = {
   genres: "/genres",
   auth: {
     googleStart: "/oauth2/authorization/google",
-    refresh: "/auth/refresh",
+    refresh: "/auth/info",
     logout: "/auth/logout",
   },
 } as const;
