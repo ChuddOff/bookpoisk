@@ -1,15 +1,13 @@
 // src/shared/api/axios.ts
-import axios, { CreateAxiosDefaults } from "axios";
+import axios, { type CreateAxiosDefaults } from "axios";
 import {
   getAccessToken,
   setAccessToken,
   removeFromStorage,
 } from "../auth/session"; // <-- путь как у тебя
-import { ENDPOINT } from "./endpoint";
-import { authService } from "@/features/auth"; // предполагается, что authService.refresh() реализован
+import { authService } from "@/entities/auth/api/swr/auth.service"; // предполагается, что authService.refresh() реализован
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || import.meta.env.VITE_API_URL || "";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 const option: CreateAxiosDefaults = {
   baseURL: BASE_URL,
@@ -36,10 +34,6 @@ httpAuth.interceptors.request.use(
     if (!!token) {
       config.headers = config.headers ?? {};
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      // не кидаем ошибку, просто выпускаем запрос без Authorization
-      // либо раскомментируй throw если хочешь жёстко требовать токен
-      // throw new Error('Отсутствует AccessToken')
     }
 
     return config;
@@ -79,59 +73,42 @@ httpAuth.interceptors.response.use(
       originalRequest &&
       !originalRequest._isRetry
     ) {
-      // чтобы не пытаться обновлять токен для экзотичных endpoints (как у тебя с чатами),
-      // можно оставить ту же проверку, что у тебя была — пример:
+      originalRequest._isRetry = true;
+
+      if (isRefreshing) {
+        // если уже идёт обновление — подождать нового токена
+        return new Promise((resolve) => {
+          subscribeTokenRefresh((newToken: string) => {
+            originalRequest.headers = originalRequest.headers ?? {};
+            originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+            resolve(httpAuth.request(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
       try {
-        const url = error.request?.responseURL || originalRequest.url || "";
-        const match = url.match(/\.ru([^?]*)/);
-        const result = match ? match[1] : "";
+        // вызываем сервис refresh, он должен вернуть новый access в response.data
+        const response = await authService.refresh();
+        const newAccessToken =
+          response?.data?.accessToken ?? response?.data?.access;
 
-        // тут твоя логика исключения (если нужно)
-        if (!(ENDPOINT.chat?.chat == result)) {
-          originalRequest._isRetry = true;
-
-          if (isRefreshing) {
-            // если уже идёт обновление — подождать нового токена
-            return new Promise((resolve, reject) => {
-              subscribeTokenRefresh((newToken: string) => {
-                originalRequest.headers = originalRequest.headers ?? {};
-                originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-                resolve(httpAuth.request(originalRequest));
-              });
-            });
-          }
-
-          isRefreshing = true;
-
-          try {
-            // вызываем сервис refresh, он должен вернуть новый access в response.data
-            const response = await authService.refresh();
-            const newAccessToken =
-              response?.data?.accessToken ?? response?.data?.access;
-
-            if (newAccessToken) {
-              // обновим локальное хранилище и дефолтный заголовок
-              setAccessToken(newAccessToken);
-              httpAuth.defaults.headers.common[
-                "Authorization"
-              ] = `Bearer ${newAccessToken}`;
-              onTokenRefreshed(newAccessToken);
-              return httpAuth.request(originalRequest);
-            } else {
-              // если бек вернул другой формат — попробуй authService.acceptNewAccess если есть
-              // либо просто очистим состояние
-              removeFromStorage();
-            }
-          } catch (refreshError) {
-            removeFromStorage();
-            console.error("Refresh token failed", refreshError);
-            // можешь сделать редирект на логин
-          } finally {
-            isRefreshing = false;
-          }
+        if (newAccessToken) {
+          // обновим локальное хранилище и дефолтный заголовок
+          setAccessToken(newAccessToken);
+          httpAuth.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${newAccessToken}`;
+          onTokenRefreshed(newAccessToken);
+          return httpAuth.request(originalRequest);
         }
-      } catch (e) {
-        // если парсинг url упал — просто дать ошибку дальше
+
+        removeFromStorage();
+      } catch (refreshError) {
+        removeFromStorage();
+        console.error("Refresh token failed", refreshError);
+      } finally {
         isRefreshing = false;
       }
     }
