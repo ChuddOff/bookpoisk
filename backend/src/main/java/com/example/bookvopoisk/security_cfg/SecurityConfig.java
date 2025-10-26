@@ -52,7 +52,7 @@ public class SecurityConfig {
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**", "/books_ai").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/auth/me").permitAll()
+        .requestMatchers(HttpMethod.GET, "/auth/info").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())

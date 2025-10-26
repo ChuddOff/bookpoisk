@@ -36,6 +36,7 @@ public class AppOidcUserService extends OidcUserService {
     String sub = (String) a.get("sub");
     String email = (String) a.get("email");
     Boolean emailVerified = (Boolean) a.getOrDefault("email_verified", null);
+    String picture = (String) a.get("picture");
 
     AuthIdentity auth = authRepo.findByProviderAndProviderUserId(provider, sub)
       .orElseGet(() -> {
@@ -44,6 +45,7 @@ public class AppOidcUserService extends OidcUserService {
         if (uname.length() > 128) uname = uname.substring(0, 128);
         u.setUsername(uname);
         u.setActive(true);
+        u.setAvatarUrl(picture);
         usersRepo.save(u);
 
         AuthIdentity ai = AuthIdentity.builder()
@@ -56,13 +58,34 @@ public class AppOidcUserService extends OidcUserService {
         return authRepo.save(ai);
       });
 
-    boolean dirty = false;
-    if (email != null && !email.equals(auth.getEmail())) { auth.setEmail(email); dirty = true; }
-    if (emailVerified != null && emailVerified != auth.getEmailVerified()) { auth.setEmailVerified(emailVerified); dirty = true; }
-    if (dirty) authRepo.save(auth);
+    Users u = auth.getUser();
+    boolean dirtyAuth = false;
+    boolean dirtyUser = false;
+
+    if (email != null && !email.equals(auth.getEmail())) {
+      auth.setEmail(email);
+      dirtyAuth = true;
+    }
+    if (emailVerified != null && !emailVerified.equals(auth.getEmailVerified())) {
+      auth.setEmailVerified(emailVerified);
+      dirtyAuth = true;
+    }
+    if (picture != null && !picture.equals(u.getAvatarUrl())) {
+      u.setAvatarUrl(normalizePictureUrl(picture));
+      dirtyUser = true;
+    }
+
+    if (dirtyAuth) authRepo.save(auth);
+    if (dirtyUser) usersRepo.save(u);
 
     // Возвращаем ОДИН principal: наш, но реализующий OidcUser
     return new AppOidcUser(input, auth.getUser().getId());
+  }
+  // Изменение формата фото
+  private String normalizePictureUrl(String url) {
+    if (url == null) return null;
+    // простая замена s96 -> s256, если формат как у Google
+    return url.replace("=s96-", "=s256-");
   }
 
   public record AppOidcUser(OidcUser input, UUID userId) implements OidcUser {
