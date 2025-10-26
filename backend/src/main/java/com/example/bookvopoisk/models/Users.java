@@ -28,6 +28,9 @@ public class Users {
   @Column(nullable = false, length=128)
   private String username;
 
+  @Column(name = "avatar_url")
+  private String avatarUrl;
+
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 

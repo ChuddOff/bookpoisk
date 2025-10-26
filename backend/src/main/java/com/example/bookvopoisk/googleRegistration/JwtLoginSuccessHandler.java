@@ -45,4 +45,3 @@ public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
     log.info("Redirect sent to {}", redirect);
   }
 }
-
