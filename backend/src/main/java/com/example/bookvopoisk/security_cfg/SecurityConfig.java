@@ -1,6 +1,7 @@
 package com.example.bookvopoisk.security_cfg;
 
 import com.example.bookvopoisk.googleRegistration.AppOAuth2UserService;
+import com.example.bookvopoisk.googleRegistration.AppOidcUserService;
 import com.example.bookvopoisk.googleRegistration.JwtLoginSuccessHandler;
 import com.example.bookvopoisk.googleRegistration.JwtUtil;
 import com.example.bookvopoisk.repository.UserRepository;
@@ -35,7 +36,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final AppOAuth2UserService oAuth2UserService;
+  private final AppOidcUserService appOidcUserService;
+  private final AppOAuth2UserService appOAuth2UserService;
   private final JwtLoginSuccessHandler successHandler;
   private final JwtUtil jwt;
   private final UserRepository usersRepo;
@@ -64,7 +66,10 @@ public class SecurityConfig {
         // google возвращает данные, которые spring также проверяет на endpoint {baseUrl}/login/oauth2/code/google?code=...&state=...
         // далее spring делаем post запрос, прикладывая client_id, client_secret, code, redirect_uri
         // обратно приходит json и далее spring вызывает метод ниже
-        .userInfoEndpoint(u -> u.userService(oAuth2UserService)) // обработка полученных данных
+        .userInfoEndpoint(u -> u
+          .oidcUserService(appOidcUserService)
+          .userService(appOAuth2UserService)
+        ) // обработка полученных данных
         // успех логина → редирект на фронт с твоим JWT (прописано в JwtLoginSuccessHandler)
         .successHandler(successHandler)
       );
