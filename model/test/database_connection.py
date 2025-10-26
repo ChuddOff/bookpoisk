@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 conn = psycopg2.connect(
-  host=os.getenv("DATABASE_URL"),
+  host=os.getenv("DATABASE_HOST"),
   port=int(os.getenv("DATABASE_PORT")),
   dbname=os.getenv("DATABASE_NAME"),
   user=os.getenv("DATABASE_USER"),
@@ -34,6 +34,9 @@ cur.execute("""
 for row in cur.fetchall():
   print(row)
 
+# cur.execute("""DELETE FROM book_genres;""")
+# conn.commit()
+#
 # cur.execute("""DELETE FROM books;""")
 # conn.commit()
 
