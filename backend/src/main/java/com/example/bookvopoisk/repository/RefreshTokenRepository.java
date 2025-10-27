@@ -6,16 +6,21 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
-  Optional<RefreshToken> findByToken(String tokenHash);
+  Optional<RefreshToken> findByRefreshTokenHash(String tokenHash);
 
-  @Modifying // Сообщает Spring Data, что запрос изменяет данные
+  @Modifying(clearAutomatically = true) // Сообщает Spring Data, что запрос изменяет данные
   // Обновляет все строки сущности RefreshToken, где:
   // r.user.id = :userId — токен принадлежит этому пользователю;
   // r.revoked = false — токен ещё активен.
   @Query("update RefreshToken r set r.revoked = true where r.user.id = :userId and r.revoked = false")
   int revokeAllActiveByUser(@Param("userId") UUID userId);
+
+  @Modifying
+  @Query("delete from RefreshToken r where r.expiresAt < :now")
+  int deleteAllExpired(@Param("now") Instant now);
 }
