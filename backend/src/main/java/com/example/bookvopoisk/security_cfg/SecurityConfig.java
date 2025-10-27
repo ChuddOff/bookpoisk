@@ -83,7 +83,7 @@ public class SecurityConfig {
     http.addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
-
+  // Какие сайты могут слать запрос на мой backend
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     var cfg = new CorsConfiguration();
