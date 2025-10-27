@@ -2,11 +2,10 @@
 import { env } from "@/shared/config";
 import { toQueryString, type Query } from "@/shared/lib";
 import { session } from "@/shared/auth/session";
-// ⬇️ УБЕРИ импорт ENDPOINT отсюда, чтобы исключить любые циклы
-// import { ENDPOINT } from "@/shared/api/endpoints";
+import { ENDPOINT } from "./endpoints";
 
 // Явная константа для refresh-эндпоинта
-const REFRESH_PATH = "/auth/refresh";
+const REFRESH_PATH = ENDPOINT.auth.refresh;
 
 export class HttpError extends Error {
   status: number;
@@ -35,7 +34,8 @@ export class ApiService {
       });
       if (!res.ok) return false;
       const data = await res.json().catch(() => null);
-      const access = (data as any)?.access as string | undefined;
+      const access =
+        (data as any)?.access ?? (data as any)?.accessToken ?? undefined;
       if (!access) return false;
       session.set(access);
       return true;

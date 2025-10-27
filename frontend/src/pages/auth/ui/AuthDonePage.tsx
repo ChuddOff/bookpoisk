@@ -1,44 +1,45 @@
 import * as React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useFinishLogin } from "@/entities/auth";
-import { AuthIntentStore } from "@/shared/lib/auth-intent";
 import { apiService } from "@/shared/api/http.service";
-import { ENDPOINT } from "@/shared/api/endpoints";
 import { Loader2 } from "lucide-react";
+import { session } from "@/shared/auth/session";
 
 export function AuthDonePage() {
+  const [search] = useSearchParams();
   const nav = useNavigate();
-  const [sp] = useSearchParams();
-  const { finishLogin } = useFinishLogin();
 
   React.useEffect(() => {
-    (async () => {
-      try {
-        await finishLogin();
+    async function finish() {
+      const code = search.get("code");
+      const state = search.get("state"); // опционально
+      if (!code) {
+        nav("/");
+        return;
+      }
 
-        // возобновим намерение, если было
-        const intent = AuthIntentStore.take();
-        if (intent?.type === "like-book") {
-          try {
-            await apiService.post<void>(ENDPOINT.likeBook, undefined, {
-              id: intent.bookId,
-            });
-          } catch {
-            /* молча игнорим */
-          }
-        } else if (intent?.type === "goto") {
-          // просто перейдём по адресу
-          nav(intent.href, { replace: true });
-          return;
+      try {
+        // В prod лучше POST /auth/complete с телом { code, state } (зависит от бекенда)
+        const res = await apiService.post<{ access?: string; next?: string }>(
+          "/auth/complete",
+          { code, state }
+        );
+
+        if (res?.access) {
+          session.set(res.access);
         }
 
-        const next = sp.get("next") || "/";
-        nav(next, { replace: true });
-      } catch {
-        nav("/", { replace: true });
+        // Можно также запросить /user здесь, если нужно обновить UI:
+        // const me = await apiService.get("/user");
+
+        nav(res?.next ?? "/");
+      } catch (err) {
+        console.error("Auth complete failed", err);
+        nav("/");
       }
-    })();
-  }, [finishLogin, nav, sp]);
+    }
+
+    finish();
+  }, [search, nav]);
 
   return (
     <div className="flex h-[60vh] items-center justify-center text-slate-600">
