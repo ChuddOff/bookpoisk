@@ -25,8 +25,14 @@ def generate_book_data(raw_book: Book) -> Optional[Dict]:
         response = ctx.client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
+            timeout=240
         )
         answer = response.choices[0].message.content
+
+        if not json.loads(answer):
+            log_error(f"GENERATION: answer have incorrect format")
+            return None
+
         return format_answer(answer, raw_book)
 
     except Exception as exc:

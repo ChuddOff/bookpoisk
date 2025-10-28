@@ -69,7 +69,12 @@ def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
         return None
 
     try:
-        yield conn.cursor()
+        cur = conn.cursor()
+        if cur is None:
+            log_error("CANNOT GET CURSOR TO DATABASE")
+            raise Exception("CANNOT GE CURSOR TO DATABASE")
+
+        yield cur
         conn.commit()
 
     except Exception as e:

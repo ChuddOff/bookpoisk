@@ -53,7 +53,7 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
                         if valid:
                             save_book_to_json(previous_book)
-                            # save_book_to_db(previous_book)
+                            save_book_to_db(previous_book)
 
                     except Exception as e:
                         log_error(f"VALIDATE: {str(e)}")
@@ -84,6 +84,7 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
                 # периодическая сборка мусора
                 if idx % 200 == 0:
+                    embedding.save_index()
                     gc.collect()
 
                 # обновляем чекпоинт
@@ -104,7 +105,7 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
             try:
                 if validated_future.result():
                     save_book_to_json(previous_book)
-                    # save_book_to_db(previous_book)
+                    save_book_to_db(previous_book)
 
             except Exception as e:
                 log_error(f"VALIDATE: {str(e)}")
