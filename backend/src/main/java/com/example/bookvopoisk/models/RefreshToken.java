@@ -14,7 +14,7 @@ import java.util.UUID;
   }, uniqueConstraints = @UniqueConstraint(name = "uk_rt_token_hash", columnNames = "token_hash") // быстрый поиск по хэшу + гарантия уникальности, что двух одинаковых хэшей токена в таблице быть не может
 )
 @Getter @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id") // аннотация Lombok, которая генерирует equals() и hashCode() только по полю id
 public class RefreshToken {

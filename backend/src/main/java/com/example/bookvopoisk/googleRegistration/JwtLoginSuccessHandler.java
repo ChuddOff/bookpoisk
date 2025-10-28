@@ -1,6 +1,7 @@
 package com.example.bookvopoisk.googleRegistration;
 
 
+import com.example.bookvopoisk.RefreshToken.RefreshService;
 import com.example.bookvopoisk.models.Users;
 import com.example.bookvopoisk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
 
   private final UserRepository usersRepo;
   private final JwtUtil jwt;
+  private final RefreshService refreshService;
 
   @Value("${app.auth.frontend-success-url}")
   private String frontendSuccessUrl;
@@ -38,7 +40,10 @@ public class JwtLoginSuccessHandler implements AuthenticationSuccessHandler {
     Users user = usersRepo.findById(userId).orElseThrow(); // берем прямо из бд, куда уже все положили
 
     String access = jwt.generateAccess(user.getId(), user.getUsername()); // JwtUtil делает HS256-подписанный токен, где: sub = Users.id (UUID), кастомный клейм "username" = user.getUsername(), iat/exp — из текущего времени и access-ttl-seconds
-    String redirect = frontendSuccessUrl + "#access=" + URLEncoder.encode(access, StandardCharsets.UTF_8);
+    String refresh = refreshService.issue(user.getId());
+    String redirect = frontendSuccessUrl
+      + "#access=" + URLEncoder.encode(access, StandardCharsets.UTF_8)
+      + "&refresh=" + URLEncoder.encode(refresh, StandardCharsets.UTF_8);
     // frontendSuccessUrl также берется из yml
     log.info("OAuth2 success for user {}", userId);
     response.sendRedirect(redirect); // Отправляется 302 на фронт.
