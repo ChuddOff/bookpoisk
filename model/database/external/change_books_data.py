@@ -7,6 +7,7 @@ import time
 import uuid
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from functools import lru_cache
 from threading import Lock
 from typing import Generator, Dict, Optional, TypedDict, Callable, Any
@@ -243,12 +244,53 @@ def retry(func: Callable) -> Callable:
     return wrapper
 
 
-def get_db_connection() -> Optional[psycopg2.connect]:
+@retry
+def get_db_connection() -> Optional[psycopg2.extensions.connection]:
+    global pool
+
     try:
-        return pool.getconn()
-    except psycopg2.Error as e:
-        log_error(f"DATABASE: {e.pgerror if hasattr(e, 'pgerror') else e}")
-        raise KeyboardInterrupt
+        conn = pool.getconn()
+
+        # проверка живо ли соединение
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1")
+
+        return conn
+
+    except Exception as e:
+        log_error(f"DATABASE CONNECTION LOST: {e}")
+
+        # попытка пересоздать пул соединений
+        try:
+            pool.closeall()
+            pool = SimpleConnectionPool(1, 10, **DB_CONFIG)
+            conn = pool.getconn()
+            return conn
+
+        # окончательная ошибка
+        except Exception as inner_e:
+            log_error(f"DATABASE RECONNECT FAILED: {inner_e}")
+            return None
+
+
+@contextmanager
+def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
+    conn = get_db_connection()
+
+    if conn is None:
+        log_error("CANNOT GET CONNECTION TO DATABASE")
+        return None
+
+    try:
+        yield conn.cursor()
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        log_error(f"SAVE TO DATABASE FAILED: {e}")
+
+    finally:
+        pool.putconn(conn)
 
 
 def load_book_from_json() -> Generator[Book, None, None]:
@@ -298,6 +340,7 @@ def start_language_model() -> None:
         subprocess.run(["powershell", "-Command", "lms server start"], check=True, timeout=15)
         time.sleep(5)
         subprocess.run(["powershell", "-Command", f"lms load {MODEL_NAME} --gpu 0.5 --ttl 1800 --context-length 4096"], check=True, timeout=60)
+
     except Exception as exc:
         log_error(f"START MODEL: {exc}")
         sys.exit(1)
@@ -376,6 +419,24 @@ def embedding_book(raw_book: str):
     return np.array(emb, dtype=np.float32)
 
 
+def format_year(year: str | int) -> Optional[int]:
+    if not year:
+        return None
+
+    if isinstance(year, int):
+        return year
+
+    text = year.strip().replace("–", "-").lower()
+    is_bc = any(x in text for x in ["bc", "до н"])  # проверка на "год до нашей эры"
+    digits = [int(y) for y in re.findall(r"\d{1,4}", text)]  # получение всех чисел
+
+    if not digits:
+        return None
+
+    year = digits[-1]  # если диапазон - берем последнее значение
+    return -year if is_bc else year
+
+
 def format_book(answer: str, raw_book: Book) -> Optional[Book]:
     """
     Конвертирует ответ модели в необходимый json формат
@@ -385,16 +446,23 @@ def format_book(answer: str, raw_book: Book) -> Optional[Book]:
     """
 
     try:
-        answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip())
+        answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip(), strict=True)
 
         r_book = Book(id=None, title="", author=None, year=None, description=None, genre=None, cover=None, pages=None)
 
         r_book["id"] = str(uuid.uuid4())
         r_book["title"] = answer["title"]
         r_book["author"] = answer["author"]
-        r_book["year"] = int(answer["year"])
+        r_book["year"] = format_year(answer["year"])
         r_book["description"] = answer["description"] if "description" in answer else None
-        r_book["genre"] = answer["genre"].split(", ") if isinstance(raw_book["genre"], str) else answer["genre"]
+
+        genre = None
+        if isinstance(answer["genre"], str):
+            genre = answer["genre"].split(", ")
+        elif isinstance(answer["genre"], list):
+            genre = answer["genre"]
+
+        r_book["genre"] = genre
         r_book["cover"] = raw_book["cover"]
         r_book["pages"] = int(raw_book["pages"])
 
@@ -517,42 +585,41 @@ def save_book_to_db(raw_book: Book) -> None:
     Записывает книгу в бд
     :param raw_book: сгенеренная и отформатированная книга
     """
+    try:
+        with get_cursor() as cursor:
 
-    connection = get_db_connection()
-    connection.autocommit = False
+            # проверка на наличие такого экземпляра в бд
+            cursor.execute(
+                "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
+                (raw_book["title"], raw_book["author"]))
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT 1 FROM books WHERE title = %s AND author = %s LIMIT 1",
-            (raw_book["title"], raw_book["author"])
-        )
+            if cursor.fetchone():
+                return
 
-        if cursor.fetchone():
-            return
-
-        try:
+            # попытка записи в бд
             cursor.execute("""
                 INSERT INTO books (id, title, author, pages, year, description, cover)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO NOTHING
             """, (
                 raw_book["id"], raw_book["title"], raw_book["author"],
-                int(raw_book["pages"]) if raw_book["pages"] else None, raw_book["year"], raw_book["description"],
-                raw_book["cover"]
+                int(raw_book["pages"]) if raw_book["pages"] else None,
+                raw_book["year"], raw_book["description"], raw_book["cover"]
             ))
 
-            for genre in raw_book["genre"]:
+            genres = raw_book["genre"]
+            if isinstance(genres, str):
+                genres = [genres]
+
+            for genre in genres:
                 cursor.execute("""
                     INSERT INTO book_genres (book_id, genre)
                     VALUES (%s, %s)
                     ON CONFLICT DO NOTHING
                 """, (raw_book["id"], genre))
 
-            connection.commit()
-
-        except Exception as e:
-            connection.rollback()
-            log_error(f"DATABASE: {e}")
+    except Exception as e:
+        log_error(f"DATABASE SAVE ERROR: {e}")
 
 
 def load_checkpoint() -> int:
