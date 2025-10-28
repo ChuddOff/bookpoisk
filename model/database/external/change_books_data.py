@@ -452,7 +452,7 @@ def format_book(answer: str, raw_book: Book) -> Optional[Book]:
 
         r_book["id"] = str(uuid.uuid4())
         r_book["title"] = answer["title"]
-        r_book["author"] = answer["author"]
+        r_book["author"] = ", ".join(answer["author"]) if isinstance(answer["author"], list) else answer["author"]
         r_book["year"] = format_year(answer["year"])
         r_book["description"] = answer["description"] if "description" in answer else None
 
@@ -464,7 +464,7 @@ def format_book(answer: str, raw_book: Book) -> Optional[Book]:
 
         r_book["genre"] = genre
         r_book["cover"] = raw_book["cover"]
-        r_book["pages"] = int(raw_book["pages"])
+        r_book["pages"] = int(raw_book["pages"]) if raw_book["pages"] else None
 
         return r_book
 
