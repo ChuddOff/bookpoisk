@@ -10,17 +10,22 @@ from models import Book, normalize_title
 
 
 class EmbeddingIndex:
+    """
+    локальный FAISS-индекс для проверки дублей книг по вектору
+    """
     def __init__(self) -> None:
         self.index: IndexFlatIP = faiss.IndexFlatIP(DIM)
         self.book_titles = []
         self.load_index()
 
     def add(self, book: Book, vector: np.ndarray) -> None:
+        # добавляем вектор и нормализованное название
         vector = np.array(vector, dtype=np.float32).reshape(1, -1)
         self.index.add(vector)  # type: ignore
         self.book_titles.append(normalize_title(book))
 
     def search(self, vector: np.ndarray, k: int = 1) -> float:
+        # ищет ближайший вектор и возвращает косинусное сходство
         if self.index.ntotal == 0:
             return 0.0
 
@@ -29,12 +34,14 @@ class EmbeddingIndex:
         return float(scores[0][0])
 
     def save_index(self) -> None:
+        # сохраняет faiss-индекс и список названий
         faiss.write_index(self.index, INDEX_PATH)
         with open(TITLES_PATH, "w", encoding="utf-8") as file:
             for book in self.book_titles:
                 file.write(book + "\n")
 
     def load_index(self) -> None:
+        # подгрузка уже существующего индекса, если есть
         from utils import log_error
 
         if os.path.exists(INDEX_PATH):
@@ -51,6 +58,9 @@ class EmbeddingIndex:
 
 @lru_cache(maxsize=10_000)
 def embedding_book(raw_book: str):
+    """
+    кэширует и возвращает векторную репрезентацию названия книги
+    """
     from context import ctx
 
     emb = ctx.embedding_model.encode(raw_book, convert_to_tensor=False, normalize_embeddings=True)
@@ -58,6 +68,9 @@ def embedding_book(raw_book: str):
 
 
 def book_in_cache_embedding(raw_book: Book, threshold: float = 0.85) -> bool:
+    """
+    проверяет наличие похожей книги через FAISS по вектору
+    """
     from context import embedding
 
     book_emb = embedding_book(raw_book["title"])
@@ -69,6 +82,9 @@ def book_in_cache_embedding(raw_book: Book, threshold: float = 0.85) -> bool:
 
 
 def book_in_cache_title(raw_book: Book) -> bool:
+    """
+    проверяет наличие книги по названию в кеше (строгое совпадение)
+    """
     from context import ctx
 
     title = normalize_title(raw_book)
@@ -76,10 +92,7 @@ def book_in_cache_title(raw_book: Book) -> bool:
 
 
 def contains_book(raw_book: Book) -> bool:
-    if book_in_cache_title(raw_book):
-        return True
-
-    if book_in_cache_embedding(raw_book):
-        return True
-
-    return False
+    """
+    универсальная проверка — есть ли книга (по названию или вектору)
+    """
+    return book_in_cache_title(raw_book) or book_in_cache_embedding(raw_book)

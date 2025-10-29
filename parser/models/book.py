@@ -3,6 +3,9 @@ from typing import Optional, TypedDict
 
 
 class Book(TypedDict):
+    """
+    универсальный формат книги — используется и для сырых, и для сгенерированных данных
+    """
     id: Optional[str]
     title: str
     author: Optional[str]
@@ -14,6 +17,9 @@ class Book(TypedDict):
 
 
 def format_year(year: str | int) -> Optional[int]:
+    """
+    преобразует разные форматы годов (строки, диапазоны, BC и т.п.) в int
+    """
     if not year:
         return None
 
@@ -32,6 +38,9 @@ def format_year(year: str | int) -> Optional[int]:
 
 
 def normalize_title(raw_book: Book) -> str:
+    """
+    упрощает название книги: убирает лишние слова и скобки
+    """
     if not raw_book["title"]:
         return ""
     t = raw_book["title"].replace("Книга ", "")

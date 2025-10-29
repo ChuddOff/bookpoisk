@@ -7,9 +7,9 @@ from models import Book, embedding_book
 
 def load_json_cache() -> None:
     """
-    Добавляет в кеш уже обработанные книги
+    подгружает уже сохранённые книги в кеш и векторный индекс
+    нужно, чтобы не генерировать дубли при рестарте
     """
-
     if not os.path.exists("res_books2.jsonl"):
         return
 
@@ -20,6 +20,9 @@ def load_json_cache() -> None:
 
 
 def save_book_to_json(raw_book: Book) -> None:
+    """
+    добавляет книгу в jsonl-файл, если её ещё нет в кеше.
+    """
     from context import ctx
 
     if raw_book["title"] in ctx.cache:
@@ -33,6 +36,9 @@ def save_book_to_json(raw_book: Book) -> None:
 
 
 def add_book_to_cache(raw_book: Book) -> None:
+    """
+    добавляет книгу в кеш и эмбеддинг-индекс (FAISS).
+    """
     from context import ctx, embedding, embedding_lock
 
     if raw_book["title"] in ctx.cache:

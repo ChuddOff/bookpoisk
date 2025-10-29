@@ -5,17 +5,16 @@ from database import save_checkpoint
 
 
 def skip(log_message: str, checkpoint_: int) -> None:
+    """ логирует пропуск книги и сохраняет чекпоинт """
     log_error(log_message)
     save_checkpoint(checkpoint_)
 
 
 def log_error(message: str, log_file: str = ERR) -> None:
     """
-    Логирует ошибки в файл
-    :param message: сообщение ошибки
-    :param log_file: файл
+    универсальное логирование ошибок
+    пишет в файл и дублирует в консоль
     """
-
     try:
         with open(log_file, "a", encoding="utf-8") as file:
             time_ = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -9,6 +9,10 @@ from config import DB_CONFIG
 
 
 def retry(func: Callable) -> Callable:
+    """
+    декоратор для повторных попыток выполнения функции
+    3 попытки -> если неудачно, исключение
+    """
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         from utils import log_error
 
@@ -26,13 +30,16 @@ def retry(func: Callable) -> Callable:
                 time.sleep(1)
 
         log_error(f"Exception while trying to {func.__name__}: {err}")
-        raise KeyboardInterrupt
+        raise KeyboardInterrupt  # финальный фейл
 
     return wrapper
 
 
 @retry
 def get_db_connection() -> Optional[psycopg2.extensions.connection]:
+    """
+    получает соединение из пула, если не работает — пересоздаёт пул
+    """
     from utils import log_error
     from context import pool
 
@@ -63,6 +70,10 @@ def get_db_connection() -> Optional[psycopg2.extensions.connection]:
 
 @contextmanager
 def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
+    """
+    контекстный менеджер для работы с БД
+    гарантирует rollback при ошибке и возврат соединения в пул
+    """
     from utils import log_error
     from context import pool
 

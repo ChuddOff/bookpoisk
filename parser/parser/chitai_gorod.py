@@ -11,6 +11,12 @@ from utils import log_error
 
 
 class ChitaiGorodParser:
+    """
+    парсер сайта chitai-gorod.ru с базовыми методами:
+    - fetch_page -> загрузка страницы
+    - parse_catalog -> получение ссылок на книги
+    - parse_book -> парсинг конкретной книги
+    """
     BASE_URL = "https://www.chitai-gorod.ru"
 
     def __init__(self) -> None:
@@ -19,6 +25,7 @@ class ChitaiGorodParser:
         self.session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
 
     def _fetch(self, url: str) -> str:
+        # 3 попытки запроса, если не удалось — кидаем исключение
         for attempt in range(3):
             try:
                 response = self.session.get(url, timeout=10)
@@ -37,6 +44,7 @@ class ChitaiGorodParser:
         return self._fetch(url)
 
     def parse_catalog(self, html: str) -> list[str]:
+        # извлекает все ссылки на карточки книг со страницы
         soup = BeautifulSoup(html, "html.parser")
         links = []
 
@@ -50,6 +58,7 @@ class ChitaiGorodParser:
 
     @staticmethod
     def parse_book(html: str) -> Optional[Book]:
+        # парсит конкретную страницу книги
         if not html:
             return None
 
@@ -59,6 +68,7 @@ class ChitaiGorodParser:
         if not main_block:
             return None
 
+        # заголовок и автор обычно в alt у обложки
         title = author = None
         cover_element = main_block.find("button", class_="product-preview__button")
 
@@ -70,6 +80,7 @@ class ChitaiGorodParser:
                 title = parts[0].strip()
                 author = parts[1][:-1] if len(parts) > 1 else None
 
+        # парсинг обложки (srcset берём последний)
         cover = None
         preview_div = main_block.find("div", class_="product-preview")
         if preview_div:
@@ -77,11 +88,12 @@ class ChitaiGorodParser:
             if imgs:
                 cover = imgs[-1].get("srcset", "").split(", ")[-1].split(" ")[0]
 
+        # краткое описание, если есть
         description = main_block.find("div", class_="product-description-short__text")
         description = description.text.strip() if description else None
 
+        # технические данные (страницы, год, жанры)
         pages = year = genre = None
-
         for item in main_block.find_all("li", class_="product-properties-item"):
             name = item.find("span", class_="product-properties-item__title").text.strip()
             content = item.find("span", class_="product-properties-item__content").text.strip()
@@ -89,10 +101,8 @@ class ChitaiGorodParser:
             match name:
                 case "Количество страниц":
                     pages = content
-
                 case "Год издания":
                     year = content
-
                 case "Жанры":
                     genre = content
 
@@ -100,6 +110,7 @@ class ChitaiGorodParser:
                     pages=pages)
 
     def get_books_from_page(self, page: int) -> list[Book]:
+        # собирает книги с одной страницы каталога
         html = self.fetch_page(page)
         urls = self.parse_catalog(html)
         books = []
@@ -108,11 +119,12 @@ class ChitaiGorodParser:
             book_html = self._fetch(url)
             book = self.parse_book(book_html)
             books.append(book)
-            time.sleep(0.2)
+            time.sleep(0.2)  # задержка чтобы не получить бан
 
         return books
 
     def parse_count_of_books(self) -> Optional[int]:
+        # парсит общее число книг из заголовка каталога
         html = self._fetch(self.BASE_URL + f"/catalog/books/hudozhestvennaya-literatura-110001")
         soup = BeautifulSoup(html, "html.parser")
         block = soup.find("div", class_="catalog-products-total")

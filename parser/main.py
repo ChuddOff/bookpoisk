@@ -10,6 +10,10 @@ from utils import save_book_to_json, load_json_cache, skip, log_error
 
 
 def process_book(checkpoint: int, count_of_books: int) -> None:
+    """
+    главный цикл парсинга и генерации
+    работает постранично, с кешированием и асинхронной генерацией/валидацией
+    """
     current_page = -1  # нужен как флаг для парсинга каждой новой страницы
     books = []
     executor = ThreadPoolExecutor(max_workers=2)
@@ -19,11 +23,12 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
         previous_book = None
 
         for idx in range(checkpoint, count_of_books):
+            # пересоздаём executor при ручном shutdown (редкий кейс)
             if executor._shutdown:
                 executor = ThreadPoolExecutor(max_workers=2)
 
             try:
-                page = idx // 30 + 1
+                page = idx // 30 + 1  # каждая страница содержит 30 книг
 
                 # при переходе на новую страницу - парсим книги с нее
                 if page != current_page:
@@ -118,6 +123,7 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
         log_error(f"FATAL ERROR: {str(e)}")
 
     finally:
+        # сохраняем состояние и корректно завершаем всё
         embedding.save_index()
         executor.shutdown(wait=True)
         stop_language_model()
@@ -125,6 +131,13 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
 
 def main() -> None:
+    """
+    точка входа:
+    - получает количество книг
+    - запускает модель
+    - восстанавливает состояние
+    - начинает основной цикл
+    """
     # парсит общее количество книг
     count_of_books = parser.parse_count_of_books()
 

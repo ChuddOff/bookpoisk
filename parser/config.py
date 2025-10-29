@@ -31,5 +31,6 @@ MODEL_KEY = os.getenv("MODEL_KEY")
 MODEL_NAME = "maziyarpanahi/mistral-7b-instruct-v0.3"
 MODEL_URL = os.getenv("MODEL_URL")
 
+# если модель не настроена — сразу выходим, нет смысла работать дальше
 if not MODEL_KEY or not MODEL_NAME or not MODEL_URL:
     sys.exit(1)

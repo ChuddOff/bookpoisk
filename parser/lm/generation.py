@@ -15,6 +15,10 @@ from utils import log_error
 
 @retry
 def generate_book_data(raw_book: Book) -> Optional[Dict]:
+    """
+    отправляет запрос в LLM с промптом для нормализации книги
+    возвращает сгенерированный json или None при ошибке
+    """
     prompt = format_prompt(raw_book)
 
     messages: list[ChatCompletionUserMessageParam] = [
@@ -42,10 +46,8 @@ def generate_book_data(raw_book: Book) -> Optional[Dict]:
 
 def verify_book_data(raw_book: Book, generated_book: Book, threshold: float = 0.85) -> bool:
     """
-    Проверяет книгу на верность названия
-    :param raw_book: книга с сайта
-    :param generated_book: сгенерированная книга
-    :param threshold: коэффициент совпадения
+    проверяет, совпадает ли сгенерированное название с исходным
+    использует косинусное сходство эмбеддингов
     """
     if not raw_book.get("title") or not generated_book.get("title"):
         return False
@@ -61,12 +63,8 @@ def verify_book_data(raw_book: Book, generated_book: Book, threshold: float = 0.
 
 def format_answer(answer: str, raw_book: Book) -> Optional[Book]:
     """
-    Конвертирует ответ модели в необходимый json формат
-    :param answer: ответ модели
-    :param raw_book: книга, которая была изначально (до генерации)
-    :return: json форматированную книгу
+    парсит json-ответ модели и дополняет данными из оригинальной книги
     """
-
     try:
         answer = json.loads(re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip(), strict=True)
 
@@ -78,6 +76,7 @@ def format_answer(answer: str, raw_book: Book) -> Optional[Book]:
         r_book["year"] = format_year(answer["year"])
         r_book["description"] = answer["description"] if "description" in answer else None
 
+        # обработка жанров
         genre = None
         if isinstance(answer["genre"], str):
             genre = answer["genre"].split(", ")
@@ -97,11 +96,9 @@ def format_answer(answer: str, raw_book: Book) -> Optional[Book]:
 
 def format_prompt(raw_book: Book) -> str:
     """
-    Создает специальный промпт из данных запаршенной книги
-    :param raw_book: книга изначально (до генерации)
-    :return: промпт
+    формирует промпт для LLM
+    чётко объясняет задачу модели — очистить и дополнить данные о книге
     """
-
     format_book_ = dict()
     format_book_["title"] = normalize_title(raw_book)
     format_book_["author"] = raw_book["author"].strip()

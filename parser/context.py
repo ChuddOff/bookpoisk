@@ -10,6 +10,12 @@ from parser import ChitaiGorodParser
 
 
 class Context:
+    """
+    хранит состояние:
+    - кеш названий для проверки дублей
+    - клиент OpenAI
+    - модель эмбеддингов
+    """
     def __init__(self) -> None:
         self.cache: set[str] = set()  # кеш для хранения названий книг, для избежания повторений
         self.client = OpenAI(base_url=MODEL_URL, api_key=MODEL_KEY)
@@ -19,5 +25,7 @@ class Context:
 ctx = Context()
 parser = ChitaiGorodParser()
 embedding = EmbeddingIndex()
+
+# пул соединений с БД (до 10 активных коннектов)
 pool = SimpleConnectionPool(1, 10, **DB_CONFIG)
-embedding_lock = Lock()
+embedding_lock = Lock()  # нужен, чтобы не было race при добавлении в FAISS

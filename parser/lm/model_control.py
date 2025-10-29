@@ -11,6 +11,10 @@ from utils import log_error
 
 @retry
 def start_language_model() -> None:
+    """
+    запускает LM Studio и загружает модель
+    если что-то идёт не так — завершает работу
+    """
     try:
         subprocess.run(["powershell", "-Command", "lms server start"], check=True, timeout=15)
         time.sleep(5)
@@ -22,6 +26,10 @@ def start_language_model() -> None:
 
 
 def stop_language_model() -> None:
+    """
+    корректно завершает LM Studio
+    даже если модель не выгрузилась — форсируем закрытие процесса
+    """
     try:
         subprocess.run(["powershell", "-Command", f"lms unload {MODEL_NAME}"], check=True, timeout=15)
         subprocess.run(["powershell", "-Command", "lms server stop"], check=True, timeout=15)
@@ -32,6 +40,10 @@ def stop_language_model() -> None:
 
 
 def ensure_language_model(timeout: int = 15) -> bool:
+    """
+    проверяет, доступна ли локальная модель по API
+    даёт до 15 секунд на запуск
+    """
     err = None
     start = time.time()
 

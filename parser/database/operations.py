@@ -7,8 +7,8 @@ from models import Book
 
 def save_book_to_db(raw_book: Book) -> None:
     """
-    Записывает книгу в бд
-    :param raw_book: сгенеренная и отформатированная книга
+    записывает сгенерированную книгу и её жанры в БД
+    проверяет дубли по title+author
     """
     from utils import log_error
 
@@ -50,6 +50,7 @@ def save_book_to_db(raw_book: Book) -> None:
 
 
 def load_checkpoint() -> int:
+    """ читает текущий чекпоинт из файла """
     if not os.path.exists(CHECKPOINT):
         return 0
 
@@ -58,5 +59,6 @@ def load_checkpoint() -> int:
 
 
 def save_checkpoint(index: int) -> None:
+    """ перезаписывает чекпоинт текущим индексом """
     with open(CHECKPOINT, "w", encoding="utf-8") as file:
         file.write(str(index))
