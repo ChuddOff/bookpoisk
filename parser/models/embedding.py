@@ -35,11 +35,18 @@ class EmbeddingIndex:
                 file.write(book + "\n")
 
     def load_index(self) -> None:
+        from utils import log_error
+
         if os.path.exists(INDEX_PATH):
             self.index = faiss.read_index(INDEX_PATH)
             if os.path.exists(TITLES_PATH):
                 with open(TITLES_PATH, "r", encoding="utf-8") as file:
                     self.book_titles = [line.strip() for line in file]
+
+        if len(self.book_titles) != self.index.ntotal:
+            log_error("Index and title file mismatch, reinitializing index")
+            self.index = faiss.IndexFlatIP(DIM)
+            self.book_titles = []
 
 
 @lru_cache(maxsize=10_000)

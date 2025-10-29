@@ -1,7 +1,7 @@
 import json
 import os
 
-from config import RESULT
+from config import BACKUP
 from models import Book, embedding_book
 
 
@@ -25,7 +25,7 @@ def save_book_to_json(raw_book: Book) -> None:
     if raw_book["title"] in ctx.cache:
         return
 
-    with open(RESULT, "a", encoding="utf-8") as file:
+    with open(BACKUP, "a", encoding="utf-8") as file:
         json.dump(raw_book, file, ensure_ascii=False)
         file.write("\n")
 

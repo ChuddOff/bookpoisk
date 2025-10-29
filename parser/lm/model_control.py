@@ -28,8 +28,7 @@ def stop_language_model() -> None:
         time.sleep(1)
         subprocess.run(["powershell", "-Command", r'Stop-Process -Name "LM Studio" -Force'], check=True, timeout=15)
     except Exception as exc:
-        log_error(f"STOP MODEL: {exc}")
-        sys.exit(1)
+        log_error(f"STOP MODEL WARNING: {exc}")
 
 
 def ensure_language_model(timeout: int = 15) -> bool:

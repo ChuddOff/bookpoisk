@@ -47,6 +47,8 @@ def verify_book_data(raw_book: Book, generated_book: Book, threshold: float = 0.
     :param generated_book: сгенерированная книга
     :param threshold: коэффициент совпадения
     """
+    if not raw_book.get("title") or not generated_book.get("title"):
+        return False
 
     emb1 = embedding_book(normalize_title(raw_book))
     emb2 = embedding_book(normalize_title(generated_book))

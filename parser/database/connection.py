@@ -12,6 +12,8 @@ def retry(func: Callable) -> Callable:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         from utils import log_error
 
+        err = None
+
         for i in range(3):
             try:
                 return func(*args, **kwargs)
@@ -20,10 +22,12 @@ def retry(func: Callable) -> Callable:
                 raise
 
             except Exception as e:
-                log_error(f"Exception while trying to {func.__name__}: {e}")
+                err = e
                 time.sleep(1)
 
+        log_error(f"Exception while trying to {func.__name__}: {err}")
         raise KeyboardInterrupt
+
     return wrapper
 
 
