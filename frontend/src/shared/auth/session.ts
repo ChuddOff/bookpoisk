@@ -9,6 +9,8 @@ import { ACCESS_TOKEN } from "../constants";
  */
 export const getAccessToken = (): string | null => {
   const accessToken = Cookies.get(ACCESS_TOKEN);
+  console.log(document.cookie);
+
   console.log(accessToken);
 
   return accessToken ?? null;
