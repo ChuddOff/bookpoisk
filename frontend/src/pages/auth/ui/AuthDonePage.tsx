@@ -28,8 +28,6 @@ export function AuthDonePage() {
       }
 
       try {
-        console.log(token);
-
         // 3) Передаём токен в сервис (сохранит cookie и поставит header)
         const { profile } = await authService.acceptOAuth(token);
 
