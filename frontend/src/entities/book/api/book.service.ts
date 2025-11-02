@@ -4,6 +4,7 @@ import type {
   BookResponseDto,
   PagedBooksResponseDto,
   GenresDto,
+  BookDto,
 } from "@/entities/book/model";
 import { ENDPOINT, getKey } from "@/shared";
 import { http, httpAuth } from "@/shared/api/axios";
@@ -43,7 +44,7 @@ export class BookService {
 
   getById(id: string) {
     return http
-      .get<BookResponseDto | any>(`${ENDPOINT.book}/${id}`)
+      .get<BookDto | any>(`${ENDPOINT.book}/${id}`)
       .then((r: any) =>
         r && typeof r === "object" && "data" in r
           ? (r as BookResponseDto)

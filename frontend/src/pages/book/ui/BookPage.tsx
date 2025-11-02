@@ -50,7 +50,7 @@ export function BookPage() {
     );
   }
 
-  const book = resp.data;
+  const book = resp;
   const genres = Array.isArray(book.genre)
     ? book.genre
     : book.genre
