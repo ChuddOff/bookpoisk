@@ -25,7 +25,7 @@ export type ForMeParams = { page?: number; per_page?: number };
 export class BookService {
   list(params?: ListParams): Promise<PagedBooksResponseDto> {
     return http
-      .get<PagedBooksResponseDto>(getKey(ENDPOINT.book, params))
+      .get<PagedBooksResponseDto>(getKey(ENDPOINT.books, params))
       .then((res) => res.data);
   }
 
