@@ -4,6 +4,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { BookPage, CatalogPage, HomePage, TmaHomePage } from "@/pages";
 import { TmaLayout, WebLayout } from "./layouts";
 import { AuthDonePage } from "@/pages/auth/ui/AuthDonePage";
+import { ProfilePage } from "@/pages/profile/ui/ProfilePage";
 
 export const AppRouter = createBrowserRouter(
   [
@@ -16,6 +17,7 @@ export const AppRouter = createBrowserRouter(
         { index: true, element: <HomePage /> },
         { path: "catalog", element: <CatalogPage /> },
         { path: "book/:id", element: <BookPage /> },
+        { path: "profile", element: <ProfilePage /> },
       ],
     },
     {
@@ -25,6 +27,7 @@ export const AppRouter = createBrowserRouter(
         { index: true, element: <TmaHomePage /> },
         { path: "catalog", element: <CatalogPage /> }, // => /tma/catalog
         { path: "book/:id", element: <BookPage /> }, // => /tma/book/:id
+        { path: "profile", element: <ProfilePage /> },
       ],
     },
   ],
