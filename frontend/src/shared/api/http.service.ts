@@ -72,17 +72,10 @@ export class AuthService {
     const { mutate: mutateCache } = useSWRConfig();
     const { mutate: mutateMe } = useMe();
     const nav = useNavigate();
-    return httpAuth.get(ENDPOINT.auth.logout).then((res) => {
-      try {
-        removeFromStorage();
-        mutateMe();
-        mutateCache(() => true, undefined, { revalidate: false });
-        nav("/");
-      } catch {
-        /* noop */
-      }
-      return res;
-    });
+    removeFromStorage();
+    mutateMe();
+    mutateCache(() => true, undefined, { revalidate: false });
+    nav("/");
   }
   async acceptOAuth(accessToken: string) {
     if (!accessToken) throw new Error("No access token provided");
