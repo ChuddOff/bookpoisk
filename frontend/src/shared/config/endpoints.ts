@@ -1,4 +1,14 @@
 // src/shared/api/endpoints.ts
+
+export type AuthEndpoints = {
+  login: string;
+  register: string;
+  googleStart: string;
+  callback: string;
+  refresh: string;
+  logout: string;
+};
+
 export const ENDPOINT = {
   login: "/login",
   register: "/register",

@@ -1,10 +1,12 @@
 // src/entities/book/api/book.service.ts
-import { apiService, type ApiService, ENDPOINT } from "@/shared/api";
+
 import type {
   BookResponseDto,
   PagedBooksResponseDto,
   GenresDto,
 } from "@/entities/book/model";
+import { ENDPOINT, getKey } from "@/shared";
+import { http, httpAuth } from "@/shared/api/axios";
 
 export type ListParams = {
   page?: number;
@@ -21,35 +23,37 @@ export type ListParams = {
 export type ForMeParams = { page?: number; per_page?: number };
 
 export class BookService {
-  private readonly api: ApiService;
-  constructor(api: ApiService = apiService) {
-    this.api = api;
-  }
-
-  list(params?: ListParams) {
-    return this.api.get<PagedBooksResponseDto>(ENDPOINT.books, params);
+  list(params?: ListParams): Promise<PagedBooksResponseDto> {
+    return http
+      .get<PagedBooksResponseDto>(getKey(ENDPOINT.book, params))
+      .then((res) => res.data);
   }
 
   forMe(params?: ForMeParams) {
-    return this.api.get<PagedBooksResponseDto>(ENDPOINT.bookForMe, params);
+    return http
+      .get<PagedBooksResponseDto>(getKey(ENDPOINT.bookForMe, params))
+      .then((res) => res.data);
   }
 
   like(id: string) {
-    return this.api.post<void>(ENDPOINT.likeBook, undefined, { id });
+    return httpAuth
+      .post<void>(ENDPOINT.likeBook, { id })
+      .then((res) => res.data);
   }
 
   getById(id: string) {
-    return this.api
+    return http
       .get<BookResponseDto | any>(`${ENDPOINT.book}/${id}`)
       .then((r: any) =>
         r && typeof r === "object" && "data" in r
           ? (r as BookResponseDto)
           : ({ data: r } as BookResponseDto)
-      );
+      )
+      .then((res) => res.data);
   }
 
   genres() {
-    return this.api.get<GenresDto>(ENDPOINT.genres);
+    return http.get<GenresDto>(ENDPOINT.genres).then((res) => res.data);
   }
 }
 

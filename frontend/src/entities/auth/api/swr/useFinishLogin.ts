@@ -1,9 +1,7 @@
 import * as React from "react";
 import { useSWRConfig } from "swr";
-import { apiService } from "@/shared/api/http.service";
-import { ENDPOINT } from "@/shared/api/endpoints";
-import { session } from "@/shared/auth/session";
 import { useMe } from "@/entities/user";
+import { authService } from "@/shared";
 
 export function useFinishLogin() {
   const { mutate } = useSWRConfig();
@@ -15,13 +13,9 @@ export function useFinishLogin() {
     setLoading(true);
     setError(null);
     try {
-      const { access } = await apiService.post<{ access: string }>(
-        ENDPOINT.auth.refresh
-      );
-      session.set(access);
+      await authService.refresh();
       await mutateMe();
     } catch (e) {
-      session.clear();
       setError(e);
       throw e;
     } finally {

@@ -1,9 +1,6 @@
 // src/features/auth/auth.service.ts
 import { http } from "@/shared/api/axios"; // экземпляр без авторизации
-import {
-  setAccessToken,
-  clearAccessToken,
-} from "@/shared/auth/session";
+import { removeFromStorage, saveTokenStorage } from "@/shared/auth/session";
 import { ENDPOINT } from "@/shared/api";
 
 export const authService = {
@@ -17,7 +14,7 @@ export const authService = {
     try {
       await http.post(ENDPOINT.auth.logout);
     } finally {
-      clearAccessToken();
+      removeFromStorage();
     }
   },
 
@@ -27,7 +24,7 @@ export const authService = {
       response?.data?.accessToken ?? response?.data?.access;
 
     if (newAccessToken) {
-      setAccessToken(newAccessToken);
+      saveTokenStorage(newAccessToken);
       return newAccessToken;
     }
     return null;

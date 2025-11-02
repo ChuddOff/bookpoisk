@@ -1,8 +1,7 @@
 import * as React from "react";
 import { useSWRConfig } from "swr";
-import { apiService } from "@/shared/api/http.service";
 import { ENDPOINT } from "@/shared/api/endpoints";
-import { session } from "@/shared/auth/session";
+import { authService } from "@/shared";
 
 export function useLogout() {
   const { mutate } = useSWRConfig();
@@ -15,11 +14,10 @@ export function useLogout() {
       setLoading(true);
       setError(null);
       try {
-        await apiService.post(ENDPOINT.auth.logout);
+        await authService.logout();
       } catch (e) {
         setError(e);
       } finally {
-        session.clear();
         await mutate(ENDPOINT.user, null, { revalidate: false });
         setLoading(false);
         if (redirectTo !== false) window.location.assign(redirectTo);

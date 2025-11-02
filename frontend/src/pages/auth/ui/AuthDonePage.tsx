@@ -1,50 +1,70 @@
-import * as React from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { apiService } from "@/shared/api/http.service";
-import { Loader2 } from "lucide-react";
-import { session } from "@/shared/auth/session";
+// src/pages/auth/ui/AuthDonePage.tsx
+import { authService } from "@/shared";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { mutate } from "swr";
 
 export function AuthDonePage() {
-  const [search] = useSearchParams();
   const nav = useNavigate();
 
-  React.useEffect(() => {
-    async function finish() {
-      const code = search.get("code");
-      const state = search.get("state"); // опционально
-      if (!code) {
+  useEffect(() => {
+    async function handle() {
+      // 1) Попробуем найти token в query: ?access=... или ?token=...
+      const searchParams = new URLSearchParams(window.location.search);
+      let token =
+        searchParams.get("access") ?? searchParams.get("token") ?? null;
+
+      // 2) Если не в search, попробуем в hash (#access=...)
+      if (!token && window.location.hash) {
+        const hash = window.location.hash.replace(/^#/, "");
+        const hs = new URLSearchParams(hash);
+        token = hs.get("access") ?? hs.get("token") ?? null;
+      }
+
+      if (!token) {
+        // ничего не нашли — можно показать ошибку или просто редиректнуть
         nav("/");
         return;
       }
 
       try {
-        // В prod лучше POST /auth/complete с телом { code, state } (зависит от бекенда)
-        const res = await apiService.post<{ access?: string; next?: string }>(
-          "/auth/complete",
-          { code, state }
-        );
+        console.log(token);
 
-        if (res?.access) {
-          session.set(res.access);
+        // 3) Передаём токен в сервис (сохранит cookie и поставит header)
+        const { profile } = await authService.acceptOAuth(token);
+
+        // 4) убираем токен из url чтобы не светился
+        const newUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+
+        // 5) если у тебя есть useMe (SWR key 'me'), обновить его:
+        try {
+          // fetch profile into SWR cache (если profile есть)
+          if (profile) {
+            mutate(["me"], profile, false); // replace cache with profile
+          } else {
+            // убедиться что useMe сможет перезагрузиться и получить данные
+            mutate(["me"]);
+          }
+        } catch (e) {
+          // noop
         }
 
-        // Можно также запросить /user здесь, если нужно обновить UI:
-        // const me = await apiService.get("/user");
-
-        nav(res?.next ?? "/");
-      } catch (err) {
-        console.error("Auth complete failed", err);
-        nav("/");
+        // 6) окончательный переход куда нужно
+        nav("/"); // или /profile
+      } catch (e) {
+        console.error("acceptOAuth failed", e);
+        nav("/"); // fallback
       }
     }
 
-    finish();
-  }, [search, nav]);
+    handle();
+  }, [nav]);
 
   return (
-    <div className="flex h-[60vh] items-center justify-center text-slate-600">
-      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-      Завершаем вход…
+    <div className="p-6">
+      <h3>Авторизация...</h3>
+      <p>Подождите — мы завершаем вход.</p>
     </div>
   );
 }

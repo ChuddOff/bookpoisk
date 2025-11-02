@@ -2,12 +2,12 @@
 import axios, { type CreateAxiosDefaults } from "axios";
 import {
   getAccessToken,
-  setAccessToken,
   removeFromStorage,
-} from "../auth/session"; // <-- путь как у тебя
-import { authService } from "@/entities/auth/api/swr/auth.service"; // предполагается, что authService.refresh() реализован
+  saveTokenStorage,
+} from "../auth/session";
+import { authService } from "./http.service";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const option: CreateAxiosDefaults = {
   baseURL: BASE_URL,
@@ -15,7 +15,7 @@ const option: CreateAxiosDefaults = {
 };
 
 /**
- * Инстанс запросов без авторизации
+ * Инстанс запросов без авторизации (но у нас на все запросы будет подставляться Bearer ...)
  */
 export const http = axios.create(option);
 
@@ -25,26 +25,36 @@ export const http = axios.create(option);
 export const httpAuth = axios.create(option);
 
 /**
- * добавление в заголовок токен
+ * Установим Authorization: Bearer <token?> на ВСЕ исходящие запросы.
+ * Если токена нет — заголовок будет "Bearer " (пробел и пустота), как вы просили.
  */
-httpAuth.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
+function attachBearerInterceptor(instance: typeof http | typeof httpAuth) {
+  instance.interceptors.request.use(
+    (config) => {
+      try {
+        const token = getAccessToken();
+        config.headers = config.headers ?? {};
+        // всегда ставим Bearer, даже если token пустой
+        config.headers["Authorization"] = `Bearer ${token ?? ""}`;
+      } catch (e) {
+        // на случай, если getAccessToken бросит — всё равно отправляем пустой Bearer
+        config.headers = config.headers ?? {};
+        config.headers["Authorization"] = `Bearer `;
+      }
+      return config;
+    },
+    (err) => Promise.reject(err)
+  );
+}
 
-    if (!!token) {
-      config.headers = config.headers ?? {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (err) => {
-    return Promise.reject(err);
-  }
-);
+// прикрепляем к обоим инстансам, если нужно на все запросы
+attachBearerInterceptor(http);
+attachBearerInterceptor(httpAuth);
 
 /**
- * Обработать запрос 'Unauthorized'
+ * Обработать запрос 'Unauthorized' на httpAuth
+ * (логика: при 401/403 попытаться refresh, поставить новый Bearer, затем повторить запрос.
+ *  очередь ожидания, чтобы не дергать refresh несколько раз одновременно)
  */
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
@@ -58,16 +68,12 @@ function onTokenRefreshed(token: string) {
   refreshSubscribers = [];
 }
 
-/**
- * response interceptor
- */
 httpAuth.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const originalRequest = error?.config as any; // cast to any to allow _isRetry
+    const originalRequest = (error?.config ?? {}) as any; // any чтобы можно было писать _isRetry
     const status = error?.response?.status;
 
-    // если получили 401/403 и это не повторный запрос
     if (
       (status === 401 || status === 403) &&
       originalRequest &&
@@ -76,12 +82,16 @@ httpAuth.interceptors.response.use(
       originalRequest._isRetry = true;
 
       if (isRefreshing) {
-        // если уже идёт обновление — подождать нового токена
-        return new Promise((resolve) => {
+        // если уже идёт refresh, подписываемся и ждём
+        return new Promise((resolve, reject) => {
           subscribeTokenRefresh((newToken: string) => {
-            originalRequest.headers = originalRequest.headers ?? {};
-            originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-            resolve(httpAuth.request(originalRequest));
+            try {
+              originalRequest.headers = originalRequest.headers ?? {};
+              originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+              resolve(httpAuth.request(originalRequest));
+            } catch (e) {
+              reject(e);
+            }
           });
         });
       }
@@ -89,30 +99,50 @@ httpAuth.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // вызываем сервис refresh, он должен вернуть новый access в response.data
+        // вызов refresh'а (http POST /auth/refresh). authService.refresh() должен вернуть новый токен в response.data.accessToken|access
         const response = await authService.refresh();
-        const newAccessToken =
-          response?.data?.accessToken ?? response?.data?.access;
+        const newAccessToken = response?.data?.accessToken ?? null;
 
         if (newAccessToken) {
-          // обновим локальное хранилище и дефолтный заголовок
-          setAccessToken(newAccessToken);
+          // обновим in-memory / локальное хранилище если у вас есть функция
+          try {
+            if (typeof saveTokenStorage === "function") {
+              saveTokenStorage(newAccessToken);
+            }
+          } catch {
+            // noop
+          }
+
+          // Обновим дефолтный заголовок axios-инстанса
           httpAuth.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${newAccessToken}`;
+          // Также обновим заголовок у оригинального запроса
+          originalRequest.headers = originalRequest.headers ?? {};
+          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+
+          // оповестим подписчиков и повторим запрос
           onTokenRefreshed(newAccessToken);
           return httpAuth.request(originalRequest);
+        } else {
+          // если бек не выдал новый токен — очистим хранилище
+          removeFromStorage();
         }
-
-        removeFromStorage();
       } catch (refreshError) {
-        removeFromStorage();
+        // refresh не удался — очистим хранилище и логируем
+        try {
+          removeFromStorage();
+        } catch {
+          /* noop */
+        }
         console.error("Refresh token failed", refreshError);
+        // можно тут редиректить на login
       } finally {
         isRefreshing = false;
       }
     }
 
-    throw error;
+    // пробрасываем ошибку дальше
+    return Promise.reject(error);
   }
 );
