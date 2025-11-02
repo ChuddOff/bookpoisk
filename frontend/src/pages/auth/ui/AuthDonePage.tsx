@@ -19,16 +19,16 @@ export function AuthDonePage() {
       let refresh = searchParams.get("refresh") ?? null;
       console.log(refresh);
 
-      if (refresh) {
-        // 3) Передаём refresh в сервис (сохранит cookie и поставит header)
-        await saveRefreshToken(refresh);
-      }
-
       // 2) Если не в search, попробуем в hash (#access=...)
       if (!token && window.location.hash) {
         const hash = window.location.hash.replace(/^#/, "");
         const hs = new URLSearchParams(hash);
-        token = hs.get("access") ?? hs.get("token") ?? null;
+        token = hs.get("access") ?? null;
+      }
+      if (!refresh && window.location.hash) {
+        const hash = window.location.hash.replace(/^#/, "");
+        const hs = new URLSearchParams(hash);
+        refresh = hs.get("refresh") ?? null;
       }
 
       if (!token) {
@@ -37,9 +37,16 @@ export function AuthDonePage() {
         return;
       }
 
+      if (!refresh) {
+        // ничего не нашли — можно показать ошибку или просто редиректнуть
+        nav("/");
+        return;
+      }
+
       try {
         // 3) Передаём токен в сервис (сохранит cookie и поставит header)
         const { profile } = await authService.acceptOAuth(token);
+        await saveRefreshToken(refresh);
 
         // 4) убираем токен из url чтобы не светился
         const newUrl = window.location.origin + window.location.pathname;
