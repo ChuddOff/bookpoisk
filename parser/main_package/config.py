@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -14,14 +15,20 @@ DB_CONFIG = {
     "password": os.getenv("DATABASE_PASSWORD")
 }
 
+DATA_DIR = Path(__file__).resolve().parent.parent / "main_package/data"
+DATA_DIR.mkdir(exist_ok=True)
+
+BACKUP_DIR = Path(__file__).resolve().parent.parent / "main_package/backups"
+BACKUP_DIR.mkdir(exist_ok=True)
+
 # бэкап файл
-BACKUP = "backups/backup.jsonl"
+BACKUP = BACKUP_DIR / "backup.jsonl"
 
 # системный файлы сохранений
-CHECKPOINT = "data/checkpoint.txt"
-ERR = "data/errors.log"
-INDEX_PATH = "data/books.index"
-TITLES_PATH = "data/book_titles.tsv"
+CHECKPOINT = DATA_DIR / "checkpoint.txt"
+ERR = DATA_DIR / "errors.log"
+INDEX_PATH = DATA_DIR / "books.index"
+TITLES_PATH = DATA_DIR / "book_titles.tsv"
 
 # настройки эмбеддинг модели
 DIM = 384

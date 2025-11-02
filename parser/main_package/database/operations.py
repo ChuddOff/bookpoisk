@@ -1,8 +1,8 @@
 import os
 
-from config import CHECKPOINT
+from main_package.config import CHECKPOINT
 from .connection import get_cursor
-from models import Book
+from main_package.models import Book
 
 
 def save_book_to_db(raw_book: Book) -> None:
@@ -10,7 +10,7 @@ def save_book_to_db(raw_book: Book) -> None:
     записывает сгенерированную книгу и её жанры в БД
     проверяет дубли по title+author
     """
-    from utils import log_error
+    from main_package.utils import log_error
 
     try:
         with get_cursor() as cursor:
@@ -47,6 +47,19 @@ def save_book_to_db(raw_book: Book) -> None:
 
     except Exception as e:
         log_error(f"DATABASE SAVE ERROR: {e}")
+
+
+### DANGEROUS ###
+def _clear_db() -> None:
+    from main_package.utils import log_error
+
+    try:
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM book_genres")
+            cursor.execute("DELETE FROM books")
+
+    except Exception as e:
+        log_error(f"DATABASE CLEAR ERROR: {e}")
 
 
 def load_checkpoint() -> int:

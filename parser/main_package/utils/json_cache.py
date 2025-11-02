@@ -1,8 +1,9 @@
 import json
 import os
+from typing import Optional, List
 
-from config import BACKUP
-from models import Book, embedding_book
+from main_package.config import BACKUP
+from main_package.models import Book, embedding_book
 
 
 def load_json_cache() -> None:
@@ -10,10 +11,10 @@ def load_json_cache() -> None:
     подгружает уже сохранённые книги в кеш и векторный индекс
     нужно, чтобы не генерировать дубли при рестарте
     """
-    if not os.path.exists("res_books2.jsonl"):
+    if not os.path.exists(BACKUP):
         return
 
-    with open("res_books2.jsonl", "r", encoding="utf-8") as file:
+    with open(BACKUP, "r", encoding="utf-8") as file:
         for line in file:
             book_data = json.loads(line)
             add_book_to_cache(book_data)
@@ -23,7 +24,7 @@ def save_book_to_json(raw_book: Book) -> None:
     """
     добавляет книгу в jsonl-файл, если её ещё нет в кеше.
     """
-    from context import ctx
+    from main_package.context import ctx
 
     if raw_book["title"] in ctx.cache:
         return
@@ -35,11 +36,22 @@ def save_book_to_json(raw_book: Book) -> None:
     add_book_to_cache(raw_book)
 
 
+def load_backup_json(path: str = BACKUP) -> Optional[List[Book]]:
+    if not os.path.exists(path):
+        return None
+
+    with open(path, "r", encoding="utf-8") as file:
+        books = []
+        for line in file:
+            books.append(json.loads(line))
+        return books
+
+
 def add_book_to_cache(raw_book: Book) -> None:
     """
     добавляет книгу в кеш и эмбеддинг-индекс (FAISS).
     """
-    from context import ctx, embedding, embedding_lock
+    from main_package.context import ctx, embedding, embedding_lock
 
     if raw_book["title"] in ctx.cache:
         return

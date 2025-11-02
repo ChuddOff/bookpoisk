@@ -4,9 +4,9 @@ import time
 
 import requests
 
-from config import MODEL_NAME, MODEL_URL
-from database import retry
-from utils import log_error
+from main_package.config import MODEL_NAME, MODEL_URL
+from main_package.database import retry
+from main_package.utils import log_error
 
 
 @retry
@@ -16,9 +16,9 @@ def start_language_model() -> None:
     если что-то идёт не так — завершает работу
     """
     try:
-        subprocess.run(["powershell", "-Command", "lms server start"], check=True, timeout=15)
+        subprocess.run(["powershell", "-Command", "lms", "server", "start"], check=True, timeout=15)
         time.sleep(5)
-        subprocess.run(["powershell", "-Command", f"lms load {MODEL_NAME} --gpu 0.5 --ttl 1800 --context-length 4096"], check=True, timeout=60)
+        subprocess.run(["powershell", "-Command", "lms", "load", MODEL_NAME, "--gpu", "0.5", "--ttl", "1800", "--context-length", "4096"], check=True, timeout=60)
 
     except Exception as exc:
         log_error(f"START MODEL: {exc}")
@@ -31,10 +31,10 @@ def stop_language_model() -> None:
     даже если модель не выгрузилась — форсируем закрытие процесса
     """
     try:
-        subprocess.run(["powershell", "-Command", f"lms unload {MODEL_NAME}"], check=True, timeout=15)
-        subprocess.run(["powershell", "-Command", "lms server stop"], check=True, timeout=15)
+        subprocess.run(["powershell", "-Command", "lms", "unload", MODEL_NAME], check=True, timeout=15)
+        subprocess.run(["powershell", "-Command", "lms", "server", "stop"], check=True, timeout=15)
         time.sleep(1)
-        subprocess.run(["powershell", "-Command", r'Stop-Process -Name "LM Studio" -Force'], check=True, timeout=15)
+        subprocess.run(["powershell", "-Command", 'Stop-Process', '-Name', '"LM Studio"', '-Force'], check=True, timeout=15)
     except Exception as exc:
         log_error(f"STOP MODEL WARNING: {exc}")
 

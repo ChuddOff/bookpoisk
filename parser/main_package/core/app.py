@@ -2,14 +2,14 @@ import gc
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-from context import parser, embedding
-from database import save_book_to_db, save_checkpoint, load_checkpoint
-from lm import generate_book_data, verify_book_data, stop_language_model, start_language_model, ensure_language_model
-from models import contains_book
-from utils import save_book_to_json, load_json_cache, skip, log_error
+from main_package.context import parser, embedding
+from main_package.database import save_book_to_db, save_checkpoint, load_checkpoint
+from main_package.lm import generate_book_data, verify_book_data, stop_language_model, start_language_model, ensure_language_model
+from main_package.models import contains_book
+from main_package.utils import save_book_to_json, load_json_cache, skip, log_error
 
 
-def process_book(checkpoint: int, count_of_books: int) -> None:
+def process_book(checkpoint: int, count_of_books: int, debug: bool = False, save: bool = True) -> None:
     """
     главный цикл парсинга и генерации
     работает постранично, с кешированием и асинхронной генерацией/валидацией
@@ -39,13 +39,13 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
                 if not book:
                     checkpoint += 1
-                    skip(f"SKIP: Nothing to show!", checkpoint)
+                    skip(f"SKIP: Nothing to show!", checkpoint, debug, save)
                     continue
 
                 # если книга есть в кэше - пропускаем
                 if contains_book(book):
                     checkpoint += 1
-                    skip(f"SKIP: {book['title']}", checkpoint)
+                    skip(f"SKIP: {book['title']}", checkpoint, debug, save)
                     continue
 
                 # асинхронная генерация книги
@@ -56,12 +56,12 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
                     try:
                         valid = validated_future.result()
 
-                        if valid:
+                        if valid and save:
                             save_book_to_json(previous_book)
                             save_book_to_db(previous_book)
 
                     except Exception as e:
-                        log_error(f"VALIDATE: {str(e)}")
+                        log_error(f"VALIDATE: {str(e)}", debug=debug)
 
                 # получаем сгенерированные данные
                 try:
@@ -69,18 +69,21 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
                 except Exception as e:
                     checkpoint += 1
-                    skip(f"GENERATE: {str(e)}", checkpoint)
+                    skip(f"GENERATE: {str(e)}", checkpoint, debug, save)
+                    continue
+
+                if "error" in gen_book:
                     continue
 
                 if not gen_book:
                     checkpoint += 1
-                    skip(f"GENERATE: {book['title']}", checkpoint)
+                    skip(f"GENERATE: {book['title']}", checkpoint, debug, save)
                     continue
 
                 # если книга есть в кэше - пропускаем
                 if contains_book(gen_book):
                     checkpoint += 1
-                    skip(f"SKIP: {gen_book['title']}", checkpoint)
+                    skip(f"SKIP: {gen_book['title']}", checkpoint, debug, save)
                     continue
 
                 # валидация новой книги
@@ -89,12 +92,12 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
                 # периодическая сборка мусора
                 if idx % 200 == 0:
-                    embedding.save_index()
+                    embedding.save_index() if save else None
                     gc.collect()
 
                 # обновляем чекпоинт
                 checkpoint += 1
-                save_checkpoint(checkpoint)
+                save_checkpoint(checkpoint) if save else None
                 print(f"[{checkpoint}/{count_of_books}] {checkpoint / count_of_books * 100:.1f}%")
 
             except KeyboardInterrupt:
@@ -102,35 +105,36 @@ def process_book(checkpoint: int, count_of_books: int) -> None:
 
             except Exception as e:
                 checkpoint += 1
-                skip(f"ERROR: {str(e)}", checkpoint)
+                skip(f"ERROR: {str(e)}", checkpoint, debug, save)
                 continue
 
         # обработка последней книги
         if previous_book and validated_future:
             try:
-                if validated_future.result():
+                if validated_future.result() and save:
                     save_book_to_json(previous_book)
                     save_book_to_db(previous_book)
 
             except Exception as e:
-                log_error(f"VALIDATE: {str(e)}")
+                log_error(f"VALIDATE: {str(e)}", debug=debug)
 
     except KeyboardInterrupt:
-        print(f"Stopping script...")
-        save_checkpoint(checkpoint)
+        print(f"Stopping parser...")
+
+        save_checkpoint(checkpoint) if save else None
 
     except Exception as e:
-        log_error(f"FATAL ERROR: {str(e)}")
+        log_error(f"FATAL ERROR: {str(e)}", debug=debug)
 
     finally:
         # сохраняем состояние и корректно завершаем всё
-        embedding.save_index()
+        embedding.save_index() if save else None
         executor.shutdown(wait=True)
         stop_language_model()
         sys.exit(0)
 
 
-def main() -> None:
+def main(start: int = -1, end: int = -1, debug: bool = False, save: bool = True) -> None:
     """
     точка входа:
     - получает количество книг
@@ -139,7 +143,7 @@ def main() -> None:
     - начинает основной цикл
     """
     # парсит общее количество книг
-    count_of_books = parser.parse_count_of_books()
+    count_of_books = parser.parse_count_of_books() if end < 0 else end
 
     # если парсер вернул 0 книг - завершаем работу скрипта
     if not count_of_books:
@@ -153,24 +157,7 @@ def main() -> None:
         stop_language_model()
         sys.exit(0)
 
-    checkpoint = load_checkpoint()  # подгружаем чекпоинт из файла
+    checkpoint = load_checkpoint() if start < 0 else start  # подгружаем чекпоинт из файла
     load_json_cache()  # подгружаем кэш из json
 
-    process_book(checkpoint, count_of_books)
-
-
-if __name__ == '__main__':
-    main()
-
-
-# TODO:
-# 1. Save state to file (cache, element index)
-# 2. Validation by local LM
-# 3. Async while LM generating
-# 4. Logging errors to file
-# 5. Auto start model and LMStudio
-# 6. Remake parser from website
-# 7. Async fixes
-# 8. Some optimization
-# 9. Refactoring structure
-# 10. Make automatically application file
+    process_book(checkpoint, count_of_books, debug, save)

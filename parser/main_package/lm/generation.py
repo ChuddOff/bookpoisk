@@ -3,14 +3,15 @@ import re
 import uuid
 from typing import Optional, Dict
 
+from openai import APIConnectionError, APIError
 from openai.types.chat import ChatCompletionUserMessageParam
 from sentence_transformers import util
 
-from config import MODEL_NAME
-from context import ctx
-from database import retry
-from models import Book, normalize_title, format_year, embedding_book
-from utils import log_error
+from main_package.config import MODEL_NAME
+from main_package.context import ctx
+from main_package.database import retry
+from main_package.models import Book, normalize_title, format_year, embedding_book
+from main_package.utils import log_error
 
 
 @retry
@@ -38,6 +39,13 @@ def generate_book_data(raw_book: Book) -> Optional[Dict]:
             return None
 
         return format_answer(answer, raw_book)
+
+    except APIConnectionError as e:
+        return {"error": e}
+
+    except APIError as e:
+        if "Model unloaded" in str(e):
+            return {"error": e}
 
     except Exception as exc:
         log_error(f"GENERATION: {exc}")
@@ -71,7 +79,7 @@ def format_answer(answer: str, raw_book: Book) -> Optional[Book]:
         r_book = Book(id=None, title="", author=None, year=None, description=None, genre=None, cover=None, pages=None)
 
         r_book["id"] = str(uuid.uuid4())
-        r_book["title"] = answer["title"]
+        r_book["title"] = answer["title"] if answer.get("title") else ""
         r_book["author"] = ", ".join(answer["author"]) if isinstance(answer["author"], list) else answer["author"]
         r_book["year"] = format_year(answer["year"])
         r_book["description"] = answer["description"] if "description" in answer else None

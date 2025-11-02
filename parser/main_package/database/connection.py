@@ -5,7 +5,7 @@ from typing import Callable, Any, Optional, Generator
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 
-from config import DB_CONFIG
+from main_package.config import DB_CONFIG
 
 
 def retry(func: Callable) -> Callable:
@@ -14,7 +14,7 @@ def retry(func: Callable) -> Callable:
     3 попытки -> если неудачно, исключение
     """
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        from utils import log_error
+        from main_package.utils import log_error
 
         err = None
 
@@ -40,8 +40,8 @@ def get_db_connection() -> Optional[psycopg2.extensions.connection]:
     """
     получает соединение из пула, если не работает — пересоздаёт пул
     """
-    from utils import log_error
-    from context import pool
+    from main_package.utils import log_error
+    from main_package.context import pool
 
     try:
         conn = pool.getconn()
@@ -74,8 +74,8 @@ def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
     контекстный менеджер для работы с БД
     гарантирует rollback при ошибке и возврат соединения в пул
     """
-    from utils import log_error
-    from context import pool
+    from main_package.utils import log_error
+    from main_package.context import pool
 
     conn = get_db_connection()
 

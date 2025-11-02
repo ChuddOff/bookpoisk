@@ -4,9 +4,9 @@ from openai import OpenAI
 from psycopg2.pool import SimpleConnectionPool
 from sentence_transformers import SentenceTransformer
 
-from config import MODEL_URL, MODEL_KEY, DB_CONFIG
-from models import EmbeddingIndex
-from parser import ChitaiGorodParser
+from main_package.config import MODEL_URL, MODEL_KEY, DB_CONFIG
+from main_package.models import EmbeddingIndex
+from main_package.pars import ChitaiGorodParser
 
 
 class Context:

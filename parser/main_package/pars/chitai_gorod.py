@@ -6,8 +6,8 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from models import Book
-from utils import log_error
+from main_package.models import Book
+from main_package.utils import log_error
 
 
 class ChitaiGorodParser:
