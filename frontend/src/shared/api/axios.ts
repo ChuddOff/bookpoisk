@@ -31,6 +31,7 @@ const initialAccess =
   typeof getAccessToken === "function" ? getAccessToken() : null;
 if (initialAccess) {
   httpAuth.defaults.headers.common["Authorization"] = `Bearer ${initialAccess}`;
+  http.defaults.headers.common["Authorization"] = `Bearer ${initialAccess}`;
 }
 
 // ===== Кооперативная обработка одновременных 401 =====
@@ -74,6 +75,8 @@ async function doRefresh(): Promise<string> {
   // Обновим дефолтный заголовок на основном инстансе
   httpAuth.defaults.headers.common["Authorization"] = `Bearer ${access}`;
 
+  http.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+
   return access;
 }
 
@@ -87,8 +90,78 @@ httpAuth.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+http.interceptors.request.use((cfg) => {
+  const access = typeof getAccessToken === "function" ? getAccessToken() : null;
+  if (access) {
+    cfg.headers = cfg.headers ?? {};
+    cfg.headers["Authorization"] = `Bearer ${access}`;
+  }
+  return cfg;
+});
+
 // === Response: перехват 401 и кооперативный refresh с единичным ретраем исходного запроса ===
 httpAuth.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError<any>) => {
+    const status = error.response?.status;
+    const errCode = (error.response?.data as any)?.error;
+    const original = error.config as any;
+
+    // Защита от зацикливания: ретраим только один раз
+    if (!original || original._retry) {
+      return Promise.reject(error);
+    }
+
+    const shouldRefresh =
+      status === 401 &&
+      (errCode === "ACCESS_EXPIRED" ||
+        errCode === "UNAUTHORIZED" || // запасной сценарий
+        errCode === "ACCESS_INVALID");
+
+    if (!shouldRefresh) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      // Уже идёт refresh → ждём нового access, после чего повторим запрос
+      return new Promise((resolve, reject) => {
+        subscribeTokenRefresh((newAccess) => {
+          try {
+            original._retry = true;
+            original.headers = original.headers ?? {};
+            original.headers["Authorization"] = `Bearer ${newAccess}`;
+            resolve(httpAuth.request(original));
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+    }
+
+    // Стартуем refresh сами
+    isRefreshing = true;
+    try {
+      const newAccess = await doRefresh();
+      original._retry = true;
+      original.headers = original.headers ?? {};
+      original.headers["Authorization"] = `Bearer ${newAccess}`;
+      onTokenRefreshed(newAccess);
+      return httpAuth.request(original);
+    } catch (e) {
+      // Refresh не удался → чистим хранилище и пробрасываем ошибку
+      try {
+        if (typeof removeFromStorage === "function") removeFromStorage();
+      } catch {
+        /* noop */
+      }
+      return Promise.reject(e);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+);
+
+http.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<any>) => {
     const status = error.response?.status;
