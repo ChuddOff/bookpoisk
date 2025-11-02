@@ -1,5 +1,6 @@
 // src/shared/api/axios.ts
 import axios, {
+  AxiosHeaders,
   type AxiosInstance,
   type CreateAxiosDefaults,
   type InternalAxiosRequestConfig,
@@ -16,7 +17,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "";
 const option: CreateAxiosDefaults = {
   baseURL: BASE_URL,
   withCredentials: false,
+  xsrfCookieName: undefined,
+  xsrfHeaderName: undefined,
 };
+
+axios.defaults.withCredentials = false;
+(axios.defaults as any).credentials = "omit";
+axios.defaults.xsrfCookieName = undefined;
+axios.defaults.xsrfHeaderName = undefined;
 
 /**
  * Инстанс запросов без авторизации (но у нас на все запросы будет подставляться Bearer ...)
@@ -30,15 +38,31 @@ export const httpAuth = axios.create(option);
 
 http.defaults.withCredentials = false;
 httpAuth.defaults.withCredentials = false;
+(http.defaults as any).credentials = "omit";
+(httpAuth.defaults as any).credentials = "omit";
+http.defaults.xsrfCookieName = undefined;
+http.defaults.xsrfHeaderName = undefined;
+httpAuth.defaults.xsrfCookieName = undefined;
+httpAuth.defaults.xsrfHeaderName = undefined;
 
 function ensureNoCredentials(
   config: InternalAxiosRequestConfig
 ): InternalAxiosRequestConfig {
   config.withCredentials = false;
+  (config as any).credentials = "omit";
+  config.xsrfCookieName = undefined;
+  config.xsrfHeaderName = undefined;
 
-  if (config.headers) {
+  if (config.headers instanceof AxiosHeaders) {
+    config.headers.delete("credentials");
+    config.headers.delete("Credentials");
+    config.headers.delete("cookie");
+    config.headers.delete("Cookie");
+  } else if (config.headers) {
     delete (config.headers as Record<string, unknown>)["credentials"];
     delete (config.headers as Record<string, unknown>)["Credentials"];
+    delete (config.headers as Record<string, unknown>)["cookie"];
+    delete (config.headers as Record<string, unknown>)["Cookie"];
   }
 
   return config;
