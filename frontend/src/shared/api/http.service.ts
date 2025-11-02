@@ -20,7 +20,7 @@ export class AuthService {
    * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
    */
   async refresh() {
-    const res = await http.get<{ accessToken: string }>(ENDPOINT.auth.refresh);
+    const res = await http.post<{ accessToken: string }>(ENDPOINT.auth.refresh);
 
     const token =
       (res?.data as any)?.accessToken ?? (res?.data as any)?.access ?? null;
