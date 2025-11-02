@@ -27,11 +27,8 @@ function CatalogInner() {
 
   const { data, isLoading, error, mutate } = useBooks(toApiParams());
 
-  const pageData = data?.data;
   const items = data?.data ?? [];
   const last = data?.last ?? 1;
-
-  console.log(pageData);
 
   return (
     <Container className="flex flex-col gap-[24px] max-md:gap-3">

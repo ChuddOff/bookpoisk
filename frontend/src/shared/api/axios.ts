@@ -34,8 +34,6 @@ httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
   initialAccess ?? ""
 }`;
 
-console.log(initialAccess);
-
 // ===== Кооперативная обработка одновременных 401 =====
 let isRefreshing = false;
 let subscribers: Array<(t: string) => void> = [];
