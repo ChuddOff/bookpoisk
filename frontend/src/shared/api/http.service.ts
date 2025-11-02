@@ -1,11 +1,19 @@
 // src/features/auth/auth.service.ts
-import { http, httpAuth } from "./axios";
+import { httpAuth } from "./axios";
 import {
   getRefreshToken,
   removeFromStorage,
   saveTokenStorage,
 } from "../auth/session";
 import { ENDPOINT } from "../config/endpoints";
+import axios from "axios";
+
+const BASE_URL = import.meta.env.VITE_API_URL as string;
+
+const client = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+});
 
 export class AuthService {
   /**
@@ -24,32 +32,20 @@ export class AuthService {
    * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
    */
   async refresh() {
-    // берём refresh токен из localStorage (или где ты его хранишь)
     const refreshToken = getRefreshToken();
 
-    console.log(refreshToken);
-
-    // если сервер ждёт заголовок Authorization: Bearer <refresh>
-    const res = await http.post<{ accessToken: string }>(
+    const res = await client.post<{ accessToken: string }>(
       ENDPOINT.auth.refresh,
-      // тело запроса — если сервер не ждёт body, передаём undefined
       undefined,
       {
         headers: {
-          // если токена нет, всё равно передаём "Bearer " (как просил ранее),
-          // но можно и не передавать заголовок вовсе — зависит от бэкенда
           Authorization: `Bearer ${refreshToken ?? ""}`,
         },
-        // withCredentials уже должен быть выставлен в инстансе http, но если нет:
-        // withCredentials: true,
       }
     );
 
-    const token =
-      (res?.data as any)?.accessToken ?? (res?.data as any)?.access ?? null;
-
+    const token = (res?.data as any)?.accessToken ?? null;
     if (token) saveTokenStorage(token);
-
     return res;
   }
 
