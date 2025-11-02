@@ -1,5 +1,6 @@
 package com.example.bookvopoisk.security_cfg;
 
+import com.example.bookvopoisk.RefreshToken.BearerAccessAuthFilter;
 import com.example.bookvopoisk.googleRegistration.AppOAuth2UserService;
 import com.example.bookvopoisk.googleRegistration.AppOidcUserService;
 import com.example.bookvopoisk.googleRegistration.JwtLoginSuccessHandler;
@@ -13,9 +14,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,7 +32,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -50,9 +59,11 @@ public class SecurityConfig {
       .csrf(csrf -> csrf.disable())
       .cors(cors -> cors.configurationSource(corsConfigurationSource()))
       .authorizeHttpRequests(auth -> auth
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**", "/books_ai").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.POST, "/auth/refresh").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/auth/info").permitAll()
+        .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())
@@ -60,7 +71,7 @@ public class SecurityConfig {
 
       // куки JSESSIONID не нужны; контекст аутентификации живёт ровно в рамках запроса и создаётся заново для каждого запроса на основе токена.
       // отключаем их
-      .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
       .oauth2Login(oauth -> oauth // включается весь механизм регистрации через Google, редирект на Google по считанным из application.yml данным
         // google возвращает данные, которые spring также проверяет на endpoint {baseUrl}/login/oauth2/code/google?code=...&state=...
@@ -72,24 +83,34 @@ public class SecurityConfig {
         ) // обработка полученных данных
         // успех логина → редирект на фронт с твоим JWT (прописано в JwtLoginSuccessHandler)
         .successHandler(successHandler)
-      );
-    // Итого:
-    // oauth2Login(...) — включает OAuth2/OIDC-логин.
-    // .userInfoEndpoint(...) — настраивает этап “UserInfo” (когда после обмена code→tokens Spring идёт на Google UserInfo).
-    // userService(...) указывает какую реализацию интерфейса OAuth2UserService<OAuth2UserRequest, OAuth2User> использовать.,
-    // Это чисто серверный хук “обработать профиль, сопоставить с БД, вернуть principal”.
-
-    http.addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
+      )
+      // Итого:
+      // oauth2Login(...) — включает OAuth2/OIDC-логин.
+      // .userInfoEndpoint(...) — настраивает этап “UserInfo” (когда после обмена code→tokens Spring идёт на Google UserInfo).
+      // userService(...) указывает какую реализацию интерфейса OAuth2UserService<OAuth2UserRequest, OAuth2User> использовать.,
+      // Это чисто серверный хук “обработать профиль, сопоставить с БД, вернуть principal”.
+      .addFilterBefore(new BearerAccessAuthFilter(jwt), UsernamePasswordAuthenticationFilter.class)
+      .exceptionHandling(ex -> ex.authenticationEntryPoint((req, resp, e) -> {
+        if (!resp.isCommitted()) {
+          resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+          resp.setContentType("application/json");
+          resp.getWriter().write("{\"error\":\"UNAUTHORIZED\"}");
+        }
+      }));
     return http.build();
   }
-
+  // Какие сайты могут слать запрос на мой backend
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     var cfg = new CorsConfiguration();
-    cfg.setAllowedOrigins(Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
+    cfg.setAllowedOrigins(List.of(
+      "https://bookpoisk.vercel.app"
+    ));
     cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-    cfg.setAllowedHeaders(List.of("*"));
-    cfg.setAllowCredentials(true); // без кук; мы используем Bearer
+    // явно разреши Authorization
+    cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
+    // ничего не читаем из Set-Cookie → credentials НЕ нужны
+    cfg.setAllowCredentials(false);
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", cfg);
     return source;
