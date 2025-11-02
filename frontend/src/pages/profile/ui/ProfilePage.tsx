@@ -78,7 +78,9 @@ export function ProfilePage(): React.JSX.Element {
             <div className="w-full mt-3 flex flex-col gap-2">
               <Button
                 variant="outline"
-                onClick={() => authService.logout()}
+                onClick={() => {
+                  authService.logout();
+                }}
                 className="w-full"
               >
                 Выйти
