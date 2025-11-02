@@ -135,12 +135,6 @@ httpAuth.interceptors.response.use(
       onTokenRefreshed(newAccess);
       return httpAuth.request(original);
     } catch (e) {
-      // Refresh не удался — чистим и пробрасываем
-      try {
-        if (typeof removeFromStorage === "function") removeFromStorage();
-      } catch {
-        /* noop */
-      }
       return Promise.reject(e);
     } finally {
       isRefreshing = false;
