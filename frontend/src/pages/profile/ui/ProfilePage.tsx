@@ -10,7 +10,7 @@ import {
   BookRowCardSkeleton,
 } from "@/entities/book";
 import type { SWRConfiguration } from "swr";
-import { authService } from "@/shared";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 
 /**
  * Профиль пользователя.
@@ -19,6 +19,7 @@ import { authService } from "@/shared";
  * Правая колонка (растёт): список лайкнутых книг (BookRowCard).
  */
 export function ProfilePage(): React.JSX.Element {
+  const logout = useLogout();
   const nav = useNavigate();
 
   // профиль пользователя
@@ -79,7 +80,7 @@ export function ProfilePage(): React.JSX.Element {
               <Button
                 variant="outline"
                 onClick={() => {
-                  authService.logout();
+                  logout();
                 }}
                 className="w-full"
               >

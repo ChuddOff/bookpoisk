@@ -30,6 +30,10 @@ export class AuthService {
   async refresh() {
     const refreshToken = getRefreshToken();
 
+    if (!refreshToken) {
+      return;
+    }
+
     const client = axios.create({
       baseURL: import.meta.env.VITE_API_URL as string, // тот же BASE_URL, что в src/shared/api/axios.ts
       withCredentials: false, // у тебя в axios.ts стоит withCredentials: false для Bearer-only
