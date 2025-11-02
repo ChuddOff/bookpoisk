@@ -14,91 +14,25 @@ def process_book(checkpoint: int, count_of_books: int, debug: bool = False, save
     главный цикл парсинга и генерации
     работает постранично, с кешированием и асинхронной генерацией/валидацией
     """
-    current_page = -1  # нужен как флаг для парсинга каждой новой страницы
+    current_page = -1
     books = []
+
     executor = ThreadPoolExecutor(max_workers=2)
+    validated_future = None
+    previous_book = None
 
     try:
-        validated_future = None
-        previous_book = None
-
         for idx in range(checkpoint, count_of_books):
             # пересоздаём executor при ручном shutdown (редкий кейс)
             if executor._shutdown:
                 executor = ThreadPoolExecutor(max_workers=2)
 
             try:
-                page = idx // 30 + 1  # каждая страница содержит 30 книг
-
-                # при переходе на новую страницу - парсим книги с нее
-                if page != current_page:
-                    books = parser.get_books_from_page(page)
-                    current_page = page
-
-                book = books[idx % max(len(books), 1)]
-
-                if not book:
-                    checkpoint += 1
-                    skip(f"SKIP: Nothing to show!", checkpoint, debug, save)
-                    continue
-
-                # если книга есть в кэше - пропускаем
-                if contains_book(book):
-                    checkpoint += 1
-                    skip(f"SKIP: {book['title']}", checkpoint, debug, save)
-                    continue
-
-                # асинхронная генерация книги
-                future_gen = executor.submit(generate_book_data, book)
-
-                # валидация предыдущей книги
-                if previous_book and validated_future:
-                    try:
-                        valid = validated_future.result()
-
-                        if valid and save:
-                            save_book_to_json(previous_book)
-                            save_book_to_db(previous_book)
-
-                    except Exception as e:
-                        log_error(f"VALIDATE: {str(e)}", debug=debug)
-
-                # получаем сгенерированные данные
-                try:
-                    gen_book = future_gen.result()
-
-                except Exception as e:
-                    checkpoint += 1
-                    skip(f"GENERATE: {str(e)}", checkpoint, debug, save)
-                    continue
-
-                if "error" in gen_book:
-                    continue
-
-                if not gen_book:
-                    checkpoint += 1
-                    skip(f"GENERATE: {book['title']}", checkpoint, debug, save)
-                    continue
-
-                # если книга есть в кэше - пропускаем
-                if contains_book(gen_book):
-                    checkpoint += 1
-                    skip(f"SKIP: {gen_book['title']}", checkpoint, debug, save)
-                    continue
-
-                # валидация новой книги
-                validated_future = executor.submit(verify_book_data, book, gen_book)
-                previous_book = gen_book
-
-                # периодическая сборка мусора
-                if idx % 200 == 0:
-                    embedding.save_index() if save else None
-                    gc.collect()
-
-                # обновляем чекпоинт
-                checkpoint += 1
-                save_checkpoint(checkpoint) if save else None
-                print(f"[{checkpoint}/{count_of_books}] {checkpoint / count_of_books * 100:.1f}%")
+                current_page, books, checkpoint, previous_book, validated_future = _process_page(
+                    idx, checkpoint, current_page, books,
+                    previous_book, validated_future, executor,
+                    count_of_books, debug, save
+                )
 
             except KeyboardInterrupt:
                 raise
@@ -106,35 +40,101 @@ def process_book(checkpoint: int, count_of_books: int, debug: bool = False, save
             except Exception as e:
                 checkpoint += 1
                 skip(f"ERROR: {str(e)}", checkpoint, debug, save)
-                continue
 
-        # обработка последней книги
-        if previous_book and validated_future:
-            try:
-                if validated_future.result() and save:
-                    save_book_to_json(previous_book)
-                    save_book_to_db(previous_book)
-
-            except Exception as e:
-                log_error(f"VALIDATE: {str(e)}", debug=debug)
+        _handle_validation(previous_book, validated_future, debug, save)
 
     except KeyboardInterrupt:
         print(f"Stopping parser...")
-
         save_checkpoint(checkpoint) if save else None
 
     except Exception as e:
         log_error(f"FATAL ERROR: {str(e)}", debug=debug)
 
     finally:
-        # сохраняем состояние и корректно завершаем всё
+        _finalize_process(executor, save)
+
+
+def _process_page(idx, checkpoint, current_page, books, previous_book,
+                  validated_future, executor, count_of_books, debug, save):
+    """ функция обработки книги """
+    page = idx // 30 + 1
+    if page != current_page:
+        books = parser.get_books_from_page(page)
+        current_page = page
+
+    book = books[idx % max(len(books), 1)]
+
+    if not book:
+        checkpoint += 1
+        skip("SKIP: Nothing to show!", checkpoint, debug, save)
+        return current_page, books, checkpoint, previous_book, validated_future
+
+    if contains_book(book):
+        checkpoint += 1
+        skip(f"SKIP: {book['title']}", checkpoint, debug, save)
+        return current_page, books, checkpoint, previous_book, validated_future
+
+    # Генерация и валидация
+    future_gen = executor.submit(generate_book_data, book)
+    _handle_validation(previous_book, validated_future, debug, save)
+
+    try:
+        gen_book = future_gen.result()
+
+    except Exception as e:
+        checkpoint += 1
+        skip(f"GENERATE: {str(e)}", checkpoint, debug, save)
+        return current_page, books, checkpoint, previous_book, validated_future
+
+    if not gen_book or "error" in gen_book:
+        checkpoint += 1
+        skip(f"GENERATE: {book['title']}", checkpoint, debug, save)
+        return current_page, books, checkpoint, previous_book, validated_future
+
+    if contains_book(gen_book):
+        checkpoint += 1
+        skip(f"SKIP: {gen_book['title']}", checkpoint, debug, save)
+        return current_page, books, checkpoint, previous_book, validated_future
+
+    # Асинхронная валидация
+    validated_future = executor.submit(verify_book_data, book, gen_book)
+    previous_book = gen_book
+
+    # Сборка мусора и чекпоинт
+    if idx % 200 == 0:
         embedding.save_index() if save else None
-        executor.shutdown(wait=True)
-        stop_language_model()
-        sys.exit(0)
+        gc.collect()
+
+    checkpoint += 1
+    save_checkpoint(checkpoint) if save else None
+    print(f"[{checkpoint}/{count_of_books}] {checkpoint / count_of_books * 100:.1f}%")
+
+    return current_page, books, checkpoint, previous_book, validated_future
 
 
-def main(start: int = -1, end: int = -1, debug: bool = False, save: bool = True) -> None:
+def _handle_validation(previous_book, validated_future, debug: bool, save: bool):
+    """ проверяет и сохраняет предыдущую книгу """
+    if previous_book and validated_future:
+        try:
+            valid = validated_future.result()
+
+            if valid and save:
+                save_book_to_json(previous_book)
+                save_book_to_db(previous_book)
+
+        except Exception as e:
+            log_error(f"VALIDATE: {str(e)}", debug=debug)
+
+
+def _finalize_process(executor: ThreadPoolExecutor, save: bool):
+    """ корректное завершение работы """
+    embedding.save_index() if save else None
+    executor.shutdown(wait=True)
+    stop_language_model()
+    sys.exit(0)
+
+
+def main(start: int = -1, end: int = -1, debug: bool = False, save: bool = True, power: float = 1.0) -> None:
     """
     точка входа:
     - получает количество книг
@@ -150,7 +150,7 @@ def main(start: int = -1, end: int = -1, debug: bool = False, save: bool = True)
         sys.exit(0)
 
     # запускает сервер и локальную модель
-    start_language_model()
+    start_language_model(power)
 
     # если модель не запустилась - завершение работы
     if not ensure_language_model():

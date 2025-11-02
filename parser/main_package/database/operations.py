@@ -50,7 +50,11 @@ def save_book_to_db(raw_book: Book) -> None:
 
 
 ### DANGEROUS ###
-def _clear_db() -> None:
+def clear_db_DANGEROUS() -> None:
+    """
+    !!!ОПАСНО!!!
+    очищает полностью все данные из бд
+    """
     from main_package.utils import log_error
 
     try:

@@ -37,6 +37,10 @@ def save_book_to_json(raw_book: Book) -> None:
 
 
 def load_backup_json(path: str = BACKUP) -> Optional[List[Book]]:
+    """
+    загружает бэкап, записывает данные из него в бд
+    и запускает программу как продолжение этого бэкапа
+    """
     if not os.path.exists(path):
         return None
 

@@ -10,7 +10,7 @@ from main_package.utils import log_error
 
 
 @retry
-def start_language_model() -> None:
+def start_language_model(power: float = 1.0) -> None:
     """
     запускает LM Studio и загружает модель
     если что-то идёт не так — завершает работу
@@ -18,7 +18,8 @@ def start_language_model() -> None:
     try:
         subprocess.run(["powershell", "-Command", "lms", "server", "start"], check=True, timeout=15)
         time.sleep(5)
-        subprocess.run(["powershell", "-Command", "lms", "load", MODEL_NAME, "--gpu", "0.5", "--ttl", "1800", "--context-length", "4096"], check=True, timeout=60)
+        subprocess.run(["powershell", "-Command", "lms", "load", MODEL_NAME, "--gpu", str(power * 0.5), "--ttl",
+                        str(power * 1800), "--context-length", str(power * 4096)], check=True, timeout=60)
 
     except Exception as exc:
         log_error(f"START MODEL: {exc}")
