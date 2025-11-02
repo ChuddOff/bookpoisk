@@ -10,12 +10,7 @@ const fetcher: BareFetcher<BookDto> = async ([
 ]: BookSWRKey): Promise<BookDto> => {
   const result = await bookService.getById(bookId);
 
-  // Check if result matches BookResponseDto type
-  if (result && typeof result === "object" && "data" in result) {
-    return result as BookDto;
-  } else {
-    throw new Error("Invalid response format");
-  }
+  return result as BookDto;
 };
 
 export function useBook(id?: string) {
