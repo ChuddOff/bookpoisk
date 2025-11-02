@@ -5,33 +5,33 @@ import {
   getAccessToken,
   saveTokenStorage,
   removeFromStorage,
+  // если есть getRefreshToken — можно импортировать, но не обязателен:
+  // getRefreshToken,
 } from "../auth/session";
 import { authService } from "./http.service";
 
 // === Базовый URL бекенда ===
-// пример: https://bookpoisk-idwp.onrender.com
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
-// === ЕДИНСТВЕННЫЙ экспортируемый инстанс (используется всем приложением) ===
+// === ЕДИНСТВЕННЫЙ инстанс для всего приложения ===
 const config: CreateAxiosDefaults = {
   baseURL: BASE_URL,
-  withCredentials: false, // Bearer-only → убирает требование Access-Control-Allow-Credentials
+  withCredentials: false, // Bearer-only → без требований к Access-Control-Allow-Credentials
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
   },
 };
-export const httpAuth: AxiosInstance = axios.create(config);
+const httpAuth: AxiosInstance = axios.create(config);
 
-// === Внутренний "голый" клиент без интерсепторов — только для /auth/refresh, чтобы не зациклиться ===
-export const http: AxiosInstance = axios.create(config);
+// Алиас, чтобы старые импорты не падали
+const http = httpAuth;
 
-// Если токен уже есть в хранилище — подставим его в дефолтные заголовки
+// Если токен уже есть — сразу положим его в дефолтные заголовки
 const initialAccess =
   typeof getAccessToken === "function" ? getAccessToken() : null;
 if (initialAccess) {
   httpAuth.defaults.headers.common["Authorization"] = `Bearer ${initialAccess}`;
-  http.defaults.headers.common["Authorization"] = `Bearer ${initialAccess}`;
 }
 
 // ===== Кооперативная обработка одновременных 401 =====
@@ -46,10 +46,12 @@ function onTokenRefreshed(newAccess: string) {
   subscribers = [];
 }
 
-// Унифицированный вызов refresh’а через authService, без рекурсии интерсепторов
+// Унифицированный вызов /auth/refresh.
+// Ожидаем от бэка { access, refresh } ИЛИ { accessToken, refreshToken }.
 async function doRefresh(): Promise<string> {
-  // Пытаемся вызвать authService.refresh; он может принимать клиент или нет — поддержим оба варианта
-  // @ts-ignore — допускаем перегрузку у authService.refresh
+  // authService.refresh сам должен добавить Bearer <refresh> (обычно из session)
+  // Чтобы не зациклиться — даём "голый" axios:
+  // @ts-ignore поддержка возможной сигнатуры refresh(client?: AxiosInstance)
   const resp = await (authService.refresh?.length
     ? authService.refresh()
     : authService.refresh());
@@ -58,48 +60,34 @@ async function doRefresh(): Promise<string> {
   const access: string | undefined = data.accessToken;
   const refresh: string | undefined = data.accessToken;
 
-  if (!access) {
-    throw new Error("REFRESH_RESPONSE_INVALID");
-  }
+  if (!access) throw new Error("REFRESH_RESPONSE_INVALID");
 
-  // Обновим хранилище (если ваша функция принимает только access — extra аргумент будет проигнорирован)
+  // Сохраняем новые токены (если функция принимает два аргумента — ок; если один — лишний игнорнётся)
   try {
     if (typeof saveTokenStorage === "function") {
-      // @ts-ignore — поддержим сигнатуры saveTokenStorage(access) и saveTokenStorage(access, refresh)
+      // @ts-ignore поддержать saveTokenStorage(access) и saveTokenStorage(access, refresh)
       saveTokenStorage(access, refresh);
     }
   } catch {
     /* noop */
   }
 
-  // Обновим дефолтный заголовок на основном инстансе
+  // Обновляем дефолтный Authorization
   httpAuth.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-
-  http.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-
   return access;
 }
 
-// === Request: во все запросы автоматически подставляем Bearer из хранилища ===
+// === Request: во все запросы подставляем Bearer из хранилища ===
 httpAuth.interceptors.request.use((cfg) => {
   const access = typeof getAccessToken === "function" ? getAccessToken() : null;
-  if (access) {
-    cfg.headers = cfg.headers ?? {};
-    cfg.headers["Authorization"] = `Bearer ${access}`;
-  }
+  console.log(access);
+
+  cfg.headers = cfg.headers ?? {};
+  cfg.headers["Authorization"] = `Bearer ${access ?? ""}`;
   return cfg;
 });
 
-http.interceptors.request.use((cfg) => {
-  const access = typeof getAccessToken === "function" ? getAccessToken() : null;
-  if (access) {
-    cfg.headers = cfg.headers ?? {};
-    cfg.headers["Authorization"] = `Bearer ${access}`;
-  }
-  return cfg;
-});
-
-// === Response: перехват 401 и кооперативный refresh с единичным ретраем исходного запроса ===
+// === Response: перехватываем 401 и один раз обновляем access, затем ретраим ===
 httpAuth.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<any>) => {
@@ -107,7 +95,7 @@ httpAuth.interceptors.response.use(
     const errCode = (error.response?.data as any)?.error;
     const original = error.config as any;
 
-    // Защита от зацикливания: ретраим только один раз
+    // Защита от зацикливания
     if (!original || original._retry) {
       return Promise.reject(error);
     }
@@ -115,7 +103,7 @@ httpAuth.interceptors.response.use(
     const shouldRefresh =
       status === 401 &&
       (errCode === "ACCESS_EXPIRED" ||
-        errCode === "UNAUTHORIZED" || // запасной сценарий
+        errCode === "UNAUTHORIZED" ||
         errCode === "ACCESS_INVALID");
 
     if (!shouldRefresh) {
@@ -123,7 +111,7 @@ httpAuth.interceptors.response.use(
     }
 
     if (isRefreshing) {
-      // Уже идёт refresh → ждём нового access, после чего повторим запрос
+      // Уже идёт refresh — ждём результат
       return new Promise((resolve, reject) => {
         subscribeTokenRefresh((newAccess) => {
           try {
@@ -138,7 +126,7 @@ httpAuth.interceptors.response.use(
       });
     }
 
-    // Стартуем refresh сами
+    // Запускаем refresh сами
     isRefreshing = true;
     try {
       const newAccess = await doRefresh();
@@ -148,7 +136,7 @@ httpAuth.interceptors.response.use(
       onTokenRefreshed(newAccess);
       return httpAuth.request(original);
     } catch (e) {
-      // Refresh не удался → чистим хранилище и пробрасываем ошибку
+      // Refresh не удался — чистим и пробрасываем
       try {
         if (typeof removeFromStorage === "function") removeFromStorage();
       } catch {
@@ -161,63 +149,6 @@ httpAuth.interceptors.response.use(
   }
 );
 
-http.interceptors.response.use(
-  (res) => res,
-  async (error: AxiosError<any>) => {
-    const status = error.response?.status;
-    const errCode = (error.response?.data as any)?.error;
-    const original = error.config as any;
-
-    // Защита от зацикливания: ретраим только один раз
-    if (!original || original._retry) {
-      return Promise.reject(error);
-    }
-
-    const shouldRefresh =
-      status === 401 &&
-      (errCode === "ACCESS_EXPIRED" ||
-        errCode === "UNAUTHORIZED" || // запасной сценарий
-        errCode === "ACCESS_INVALID");
-
-    if (!shouldRefresh) {
-      return Promise.reject(error);
-    }
-
-    if (isRefreshing) {
-      // Уже идёт refresh → ждём нового access, после чего повторим запрос
-      return new Promise((resolve, reject) => {
-        subscribeTokenRefresh((newAccess) => {
-          try {
-            original._retry = true;
-            original.headers = original.headers ?? {};
-            original.headers["Authorization"] = `Bearer ${newAccess}`;
-            resolve(httpAuth.request(original));
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-    }
-
-    // Стартуем refresh сами
-    isRefreshing = true;
-    try {
-      const newAccess = await doRefresh();
-      original._retry = true;
-      original.headers = original.headers ?? {};
-      original.headers["Authorization"] = `Bearer ${newAccess}`;
-      onTokenRefreshed(newAccess);
-      return httpAuth.request(original);
-    } catch (e) {
-      // Refresh не удался → чистим хранилище и пробрасываем ошибку
-      try {
-        if (typeof removeFromStorage === "function") removeFromStorage();
-      } catch {
-        /* noop */
-      }
-      return Promise.reject(e);
-    } finally {
-      isRefreshing = false;
-    }
-  }
-);
+// Экспорт под обеим именами (совместимость)
+export { httpAuth, http };
+export default httpAuth;
