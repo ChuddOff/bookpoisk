@@ -30,9 +30,9 @@ const http = httpAuth;
 // Если токен уже есть — сразу положим его в дефолтные заголовки
 const initialAccess =
   typeof getAccessToken === "function" ? getAccessToken() : null;
-if (initialAccess) {
-  httpAuth.defaults.headers.common["Authorization"] = `Bearer ${initialAccess}`;
-}
+httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
+  initialAccess ?? ""
+}`;
 
 // ===== Кооперативная обработка одновременных 401 =====
 let isRefreshing = false;
