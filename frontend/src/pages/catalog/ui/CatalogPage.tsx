@@ -9,6 +9,7 @@ import {
   usePagination,
 } from "@/widgets/catalog";
 import { Button, Container } from "@/shared/ui";
+import { authService } from "@/shared";
 
 function CatalogInner() {
   const {
@@ -29,6 +30,7 @@ function CatalogInner() {
 
   const items = data?.data ?? [];
   const last = data?.last ?? 1;
+  authService.refresh();
 
   return (
     <Container className="flex flex-col gap-[24px] max-md:gap-3">
