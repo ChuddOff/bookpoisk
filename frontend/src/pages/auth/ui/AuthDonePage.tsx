@@ -1,5 +1,6 @@
 // src/pages/auth/ui/AuthDonePage.tsx
 import { authService } from "@/shared";
+import { saveRefreshToken } from "@/shared/auth/session";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { mutate } from "swr";
@@ -13,6 +14,12 @@ export function AuthDonePage() {
       const searchParams = new URLSearchParams(window.location.search);
       let token =
         searchParams.get("access") ?? searchParams.get("token") ?? null;
+
+      let refresh = searchParams.get("refresh") ?? null;
+      if (refresh) {
+        // 3) Передаём refresh в сервис (сохранит cookie и поставит header)
+        await saveRefreshToken(refresh);
+      }
 
       // 2) Если не в search, попробуем в hash (#access=...)
       if (!token && window.location.hash) {

@@ -59,7 +59,6 @@ async function doRefresh(): Promise<string> {
   const data = resp?.data ?? {};
 
   const access: string | undefined = data.accessToken;
-  const refresh: string | undefined = data.accessToken;
 
   if (!access) throw new Error("REFRESH_RESPONSE_INVALID");
 
@@ -67,7 +66,7 @@ async function doRefresh(): Promise<string> {
   try {
     if (typeof saveTokenStorage === "function") {
       // @ts-ignore поддержать saveTokenStorage(access) и saveTokenStorage(access, refresh)
-      saveTokenStorage(access, refresh);
+      saveTokenStorage(access);
     }
   } catch {
     /* noop */

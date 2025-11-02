@@ -1,6 +1,10 @@
 // src/features/auth/auth.service.ts
 import { http, httpAuth } from "./axios";
-import { removeFromStorage, saveTokenStorage } from "../auth/session";
+import {
+  getRefreshToken,
+  removeFromStorage,
+  saveTokenStorage,
+} from "../auth/session";
 import { ENDPOINT } from "../config/endpoints";
 
 export class AuthService {
@@ -20,7 +24,24 @@ export class AuthService {
    * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
    */
   async refresh() {
-    const res = await http.post<{ accessToken: string }>(ENDPOINT.auth.refresh);
+    // берём refresh токен из localStorage (или где ты его хранишь)
+    const refreshToken = getRefreshToken();
+
+    // если сервер ждёт заголовок Authorization: Bearer <refresh>
+    const res = await http.post<{ accessToken: string }>(
+      ENDPOINT.auth.refresh,
+      // тело запроса — если сервер не ждёт body, передаём undefined
+      undefined,
+      {
+        headers: {
+          // если токена нет, всё равно передаём "Bearer " (как просил ранее),
+          // но можно и не передавать заголовок вовсе — зависит от бэкенда
+          Authorization: `Bearer ${refreshToken ?? ""}`,
+        },
+        // withCredentials уже должен быть выставлен в инстансе http, но если нет:
+        // withCredentials: true,
+      }
+    );
 
     const token =
       (res?.data as any)?.accessToken ?? (res?.data as any)?.access ?? null;
