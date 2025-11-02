@@ -1,5 +1,10 @@
 // src/shared/api/axios.ts
-import axios, { type CreateAxiosDefaults } from "axios";
+import axios, {
+  AxiosHeaders,
+  type AxiosInstance,
+  type CreateAxiosDefaults,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import {
   getAccessToken,
   removeFromStorage,
@@ -12,7 +17,14 @@ const BASE_URL = import.meta.env.VITE_API_URL || "";
 const option: CreateAxiosDefaults = {
   baseURL: BASE_URL,
   withCredentials: false,
+  xsrfCookieName: undefined,
+  xsrfHeaderName: undefined,
 };
+
+axios.defaults.withCredentials = false;
+(axios.defaults as any).credentials = "omit";
+axios.defaults.xsrfCookieName = undefined;
+axios.defaults.xsrfHeaderName = undefined;
 
 /**
  * Инстанс запросов без авторизации (но у нас на все запросы будет подставляться Bearer ...)
@@ -24,26 +36,59 @@ export const http = axios.create(option);
  */
 export const httpAuth = axios.create(option);
 
+http.defaults.withCredentials = false;
+httpAuth.defaults.withCredentials = false;
+(http.defaults as any).credentials = "omit";
+(httpAuth.defaults as any).credentials = "omit";
+http.defaults.xsrfCookieName = undefined;
+http.defaults.xsrfHeaderName = undefined;
+httpAuth.defaults.xsrfCookieName = undefined;
+httpAuth.defaults.xsrfHeaderName = undefined;
+
+function ensureNoCredentials(
+  config: InternalAxiosRequestConfig
+): InternalAxiosRequestConfig {
+  config.withCredentials = false;
+  (config as any).credentials = "omit";
+  config.xsrfCookieName = undefined;
+  config.xsrfHeaderName = undefined;
+
+  if (config.headers instanceof AxiosHeaders) {
+    config.headers.delete("credentials");
+    config.headers.delete("Credentials");
+    config.headers.delete("cookie");
+    config.headers.delete("Cookie");
+  } else if (config.headers) {
+    delete (config.headers as Record<string, unknown>)["credentials"];
+    delete (config.headers as Record<string, unknown>)["Credentials"];
+    delete (config.headers as Record<string, unknown>)["cookie"];
+    delete (config.headers as Record<string, unknown>)["Cookie"];
+  }
+
+  return config;
+}
+
 /**
  * Установим Authorization: Bearer <token?> на ВСЕ исходящие запросы.
  * Если токена нет — заголовок будет "Bearer " (пробел и пустота), как вы просили.
  */
-function attachBearerInterceptor(instance: typeof http | typeof httpAuth) {
+function attachBearerInterceptor(instance: AxiosInstance) {
   instance.interceptors.request.use(
     (config) => {
+      const safeConfig = ensureNoCredentials(config);
+
       try {
         const token = getAccessToken();
-        config.headers = config.headers ?? {};
+        safeConfig.headers = safeConfig.headers ?? {};
         // всегда ставим Bearer, даже если token пустой
-        config.headers["Authorization"] = `Bearer ${token ?? ""}`;
-        config.headers["credentials"] = "omit";
-      } catch (e) {
+        safeConfig.headers["Authorization"] = `Bearer ${token ?? ""}`;
+      } catch {
         // на случай, если getAccessToken бросит — всё равно отправляем пустой Bearer
-        config.headers = config.headers ?? {};
-        config.headers["Authorization"] = `Bearer `;
-        config.headers["credentials"] = "omit";
+        safeConfig.headers = safeConfig.headers ?? {};
+        safeConfig.headers["Authorization"] = "Bearer ";
       }
-      return config;
+
+      return safeConfig;
     },
     (err) => Promise.reject(err)
   );
@@ -90,7 +135,7 @@ httpAuth.interceptors.response.use(
             try {
               originalRequest.headers = originalRequest.headers ?? {};
               originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-              originalRequest.headers["credentials"] = "omit";
+              ensureNoCredentials(originalRequest);
               resolve(httpAuth.request(originalRequest));
             } catch (e) {
               reject(e);
@@ -120,11 +165,11 @@ httpAuth.interceptors.response.use(
           httpAuth.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${newAccessToken}`;
-          httpAuth.defaults.headers.common["credentials"] = "omit";
+          httpAuth.defaults.withCredentials = false;
           // Также обновим заголовок у оригинального запроса
           originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-          originalRequest.headers["credentials"] = "omit";
+          ensureNoCredentials(originalRequest);
 
           // оповестим подписчиков и повторим запрос
           onTokenRefreshed(newAccessToken);

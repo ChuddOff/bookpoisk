@@ -4,7 +4,7 @@ import { removeFromStorage, saveTokenStorage } from "@/shared/auth/session";
 import { ENDPOINT } from "@/shared/api";
 
 export const authService = {
-  // вызывает бек для обновления access (refresh cookie передаётся автоматически через withCredentials)
+  // вызывает бек для обновления access (cookie не отправляются, withCredentials отключён)
   async refresh() {
     // ожидаем { accessToken: string } или { access: string } — подкорректируйте под бек
     return http.post(ENDPOINT.auth.refresh);
