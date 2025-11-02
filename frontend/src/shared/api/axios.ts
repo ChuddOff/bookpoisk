@@ -1,5 +1,9 @@
 // src/shared/api/axios.ts
-import axios, { type CreateAxiosDefaults } from "axios";
+import axios, {
+  type AxiosInstance,
+  type CreateAxiosDefaults,
+  type InternalAxiosRequestConfig,
+} from "axios";
 import {
   getAccessToken,
   removeFromStorage,
@@ -24,26 +28,43 @@ export const http = axios.create(option);
  */
 export const httpAuth = axios.create(option);
 
+http.defaults.withCredentials = false;
+httpAuth.defaults.withCredentials = false;
+
+function ensureNoCredentials(
+  config: InternalAxiosRequestConfig
+): InternalAxiosRequestConfig {
+  config.withCredentials = false;
+
+  if (config.headers) {
+    delete (config.headers as Record<string, unknown>)["credentials"];
+    delete (config.headers as Record<string, unknown>)["Credentials"];
+  }
+
+  return config;
+}
+
 /**
  * Установим Authorization: Bearer <token?> на ВСЕ исходящие запросы.
  * Если токена нет — заголовок будет "Bearer " (пробел и пустота), как вы просили.
  */
-function attachBearerInterceptor(instance: typeof http | typeof httpAuth) {
+function attachBearerInterceptor(instance: AxiosInstance) {
   instance.interceptors.request.use(
     (config) => {
+      const safeConfig = ensureNoCredentials(config);
+
       try {
         const token = getAccessToken();
-        config.headers = config.headers ?? {};
+        safeConfig.headers = safeConfig.headers ?? {};
         // всегда ставим Bearer, даже если token пустой
-        config.headers["Authorization"] = `Bearer ${token ?? ""}`;
-        config.headers["credentials"] = "omit";
-      } catch (e) {
+        safeConfig.headers["Authorization"] = `Bearer ${token ?? ""}`;
+      } catch {
         // на случай, если getAccessToken бросит — всё равно отправляем пустой Bearer
-        config.headers = config.headers ?? {};
-        config.headers["Authorization"] = `Bearer `;
-        config.headers["credentials"] = "omit";
+        safeConfig.headers = safeConfig.headers ?? {};
+        safeConfig.headers["Authorization"] = "Bearer ";
       }
-      return config;
+
+      return safeConfig;
     },
     (err) => Promise.reject(err)
   );
@@ -90,7 +111,7 @@ httpAuth.interceptors.response.use(
             try {
               originalRequest.headers = originalRequest.headers ?? {};
               originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-              originalRequest.headers["credentials"] = "omit";
+              ensureNoCredentials(originalRequest);
               resolve(httpAuth.request(originalRequest));
             } catch (e) {
               reject(e);
@@ -120,11 +141,11 @@ httpAuth.interceptors.response.use(
           httpAuth.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${newAccessToken}`;
-          httpAuth.defaults.headers.common["credentials"] = "omit";
+          httpAuth.defaults.withCredentials = false;
           // Также обновим заголовок у оригинального запроса
           originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
-          originalRequest.headers["credentials"] = "omit";
+          ensureNoCredentials(originalRequest);
 
           // оповестим подписчиков и повторим запрос
           onTokenRefreshed(newAccessToken);
