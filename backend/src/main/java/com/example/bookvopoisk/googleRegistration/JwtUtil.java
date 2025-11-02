@@ -38,6 +38,15 @@ public class JwtUtil {
     this.ttlSeconds = ttlSeconds;
   }
 
+  public String subject(String token) {
+    return Jwts.parser()
+      .verifyWith(key)
+      .build()
+      .parseSignedClaims(token)
+      .getPayload()
+      .getSubject();
+  }
+
   public String generateAccess(UUID userId, String username) {
     Instant now = Instant.now();
     return Jwts.builder()
