@@ -10,6 +10,7 @@ import {
   BookRowCardSkeleton,
 } from "@/entities/book";
 import type { SWRConfiguration } from "swr";
+import { authService } from "@/shared";
 
 /**
  * Профиль пользователя.
@@ -50,7 +51,7 @@ export function ProfilePage(): React.JSX.Element {
       <div className="min-h-[calc(100vh-120px)]">
         <div className="grid grid-cols-1 tablet:grid-cols-[320px_1fr] gap-6">
           {/* left column */}
-          <aside className="rounded-xl border border-line bg-white p-6 flex flex-col items-center gap-4">
+          <aside className="rounded-xl border border-line bg-white p-6 flex flex-col items-center gap-4 h-fit">
             <div className="w-64 h-64 rounded-full overflow-hidden bg-soft flex items-center justify-center">
               {me?.avatar ? (
                 <img
@@ -77,7 +78,7 @@ export function ProfilePage(): React.JSX.Element {
             <div className="w-full mt-3 flex flex-col gap-2">
               <Button
                 variant="outline"
-                onClick={() => nav("/profile/settings")}
+                onClick={() => authService.logout()}
                 className="w-full"
               >
                 Выйти

@@ -7,6 +7,9 @@ import {
 } from "../auth/session";
 import { ENDPOINT } from "../config/endpoints";
 import axios from "axios";
+import { useSWRConfig } from "swr";
+import { useNavigate } from "react-router-dom";
+import { useMe } from "@/entities/user";
 
 export class AuthService {
   /**
@@ -66,9 +69,15 @@ export class AuthService {
    * Очищаем локальное хранилище токенов.
    */
   async logout() {
+    const { mutate: mutateCache } = useSWRConfig();
+    const { mutate: mutateMe } = useMe();
+    const nav = useNavigate();
     return httpAuth.get(ENDPOINT.auth.logout).then((res) => {
       try {
         removeFromStorage();
+        mutateMe();
+        mutateCache(() => true, undefined, { revalidate: false });
+        nav("/");
       } catch {
         /* noop */
       }
