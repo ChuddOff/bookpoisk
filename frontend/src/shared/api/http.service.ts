@@ -10,11 +10,6 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
-const client = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-});
-
 export class AuthService {
   /**
    * Регистрация
@@ -34,18 +29,35 @@ export class AuthService {
   async refresh() {
     const refreshToken = getRefreshToken();
 
-    const res = await client.post<{ accessToken: string }>(
-      ENDPOINT.auth.refresh,
-      undefined,
-      {
-        headers: {
-          Authorization: `Bearer ${refreshToken ?? ""}`,
-        },
-      }
-    );
+    const client = axios.create({
+      baseURL: import.meta.env.VITE_API_URL as string, // тот же BASE_URL, что в src/shared/api/axios.ts
+      withCredentials: false, // у тебя в axios.ts стоит withCredentials: false для Bearer-only
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        // ставим refresh в Authorization — как ожидает бэкенд
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    });
+    const res = await client.post(ENDPOINT.auth.refresh, undefined);
 
-    const token = (res?.data as any)?.accessToken ?? null;
-    if (token) saveTokenStorage(token);
+    // Приводим к ожидаемой форме: bэк может вернуть { accessToken } или { access }
+    const data = (res && (res.data ?? {})) as any;
+    const access = data.accessToken ?? data.access ?? data.access_token ?? null;
+
+    if (!access) {
+      // Если ответ неожиданный — считаем это ошибкой
+      throw new Error("REFRESH_FAILED_NO_ACCESS");
+    }
+
+    // Сохраняем новый access (функция сохраняет в localStorage, как ты просил)
+    try {
+      saveTokenStorage(access);
+    } catch {
+      /* noop */
+    }
+
+    // Возвращаем весь ответ axios (чтобы caller мог получить data и т.п.)
     return res;
   }
 
