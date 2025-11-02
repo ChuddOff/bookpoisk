@@ -4,7 +4,6 @@ import type { AxiosError, AxiosInstance, CreateAxiosDefaults } from "axios";
 import {
   getAccessToken,
   saveTokenStorage,
-  removeFromStorage,
   // если есть getRefreshToken — можно импортировать, но не обязателен:
   // getRefreshToken,
 } from "../auth/session";
