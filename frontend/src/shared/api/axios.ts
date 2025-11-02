@@ -28,8 +28,7 @@ const httpAuth: AxiosInstance = axios.create(config);
 const http = httpAuth;
 
 // Если токен уже есть — сразу положим его в дефолтные заголовки
-const initialAccess =
-  typeof getAccessToken === "function" ? getAccessToken() : null;
+const initialAccess = getAccessToken();
 httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
   initialAccess ?? ""
 }`;
