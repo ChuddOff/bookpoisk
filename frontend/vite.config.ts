@@ -8,4 +8,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   base: process.env.VITE_BASE ?? "/",
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://bookpoisk-idwp.onrender.com",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

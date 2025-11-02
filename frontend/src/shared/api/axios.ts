@@ -36,10 +36,12 @@ function attachBearerInterceptor(instance: typeof http | typeof httpAuth) {
         config.headers = config.headers ?? {};
         // всегда ставим Bearer, даже если token пустой
         config.headers["Authorization"] = `Bearer ${token ?? ""}`;
+        config.headers["credentials"] = "omit";
       } catch (e) {
         // на случай, если getAccessToken бросит — всё равно отправляем пустой Bearer
         config.headers = config.headers ?? {};
         config.headers["Authorization"] = `Bearer `;
+        config.headers["credentials"] = "omit";
       }
       return config;
     },
@@ -88,6 +90,7 @@ httpAuth.interceptors.response.use(
             try {
               originalRequest.headers = originalRequest.headers ?? {};
               originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+              originalRequest.headers["credentials"] = "omit";
               resolve(httpAuth.request(originalRequest));
             } catch (e) {
               reject(e);
@@ -117,9 +120,11 @@ httpAuth.interceptors.response.use(
           httpAuth.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${newAccessToken}`;
+          httpAuth.defaults.headers.common["credentials"] = "omit";
           // Также обновим заголовок у оригинального запроса
           originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+          originalRequest.headers["credentials"] = "omit";
 
           // оповестим подписчиков и повторим запрос
           onTokenRefreshed(newAccessToken);
