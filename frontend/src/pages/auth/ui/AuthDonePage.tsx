@@ -16,6 +16,8 @@ export function AuthDonePage() {
         searchParams.get("access") ?? searchParams.get("token") ?? null;
 
       let refresh = searchParams.get("refresh") ?? null;
+      console.log(refresh);
+
       if (refresh) {
         // 3) Передаём refresh в сервис (сохранит cookie и поставит header)
         await saveRefreshToken(refresh);

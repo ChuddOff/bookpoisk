@@ -42,19 +42,7 @@ function lsRemove(key: string): void {
 export const getAccessToken = (): string | null => {
   try {
     const accessToken = lsGet(ACCESS_TOKEN);
-    // лог для диагностики (можешь убрать)
-    // показываем document.cookie для отладки смесей cookie/localStorage
-    try {
-      // eslint-disable-next-line no-console
-      console.log(
-        "document.cookie:",
-        typeof document !== "undefined" ? document.cookie : "<no document>"
-      );
-    } catch {
-      /* noop */
-    }
     // eslint-disable-next-line no-console
-    console.log("accessToken (localStorage):", accessToken);
     return accessToken ?? null;
   } catch {
     return null;
@@ -116,7 +104,6 @@ export const getRefreshToken = (): string | null => {
   try {
     const refresh = lsGet(REFRESH_TOKEN);
     // eslint-disable-next-line no-console
-    console.log("refreshToken (localStorage):", refresh);
     return refresh ?? null;
   } catch {
     return null;
