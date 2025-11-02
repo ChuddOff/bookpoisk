@@ -34,6 +34,8 @@ httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
   initialAccess ?? ""
 }`;
 
+console.log(initialAccess);
+
 // ===== Кооперативная обработка одновременных 401 =====
 let isRefreshing = false;
 let subscribers: Array<(t: string) => void> = [];
@@ -80,7 +82,6 @@ async function doRefresh(): Promise<string> {
 // === Request: во все запросы подставляем Bearer из хранилища ===
 httpAuth.interceptors.request.use((cfg) => {
   const access = typeof getAccessToken === "function" ? getAccessToken() : null;
-  console.log(access);
 
   cfg.headers = cfg.headers ?? {};
   cfg.headers["Authorization"] = `Bearer ${access ?? ""}`;
