@@ -45,7 +45,7 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
 
         {book.genre && (
           <div className="mt-1 flex flex-wrap gap-1">
-            {book.genre.split(", ").map((g) => (
+            {book.genre.map((g) => (
               <span
                 key={g}
                 className="rounded-full border border-line bg-white px-2 py-0.5 text-[11px] text-slate-700"

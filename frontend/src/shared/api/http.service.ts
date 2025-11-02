@@ -68,7 +68,7 @@ export class AuthService {
     // Опционально: сразу получить профиль /auth/info, чтобы инициализировать сессию
     try {
       const profile = await httpAuth
-        .get("/auth/info")
+        .get("/auth/refresh")
         .then((r) => r.data)
         .catch(() => null);
       return { token: accessToken, profile };
