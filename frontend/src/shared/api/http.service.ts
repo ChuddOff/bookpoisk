@@ -27,6 +27,8 @@ export class AuthService {
     // берём refresh токен из localStorage (или где ты его хранишь)
     const refreshToken = getRefreshToken();
 
+    console.log(refreshToken);
+
     // если сервер ждёт заголовок Authorization: Bearer <refresh>
     const res = await http.post<{ accessToken: string }>(
       ENDPOINT.auth.refresh,
