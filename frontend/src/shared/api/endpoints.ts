@@ -1,7 +1,7 @@
 export const ENDPOINT = {
   login: "/login",
   register: "/register",
-  user: "/auth/me/google",
+  user: "/auth/me",
   book: "/book",
   books: "/books",
   bookForMe: "/bookForMe",
