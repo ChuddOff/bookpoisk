@@ -104,7 +104,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     var cfg = new CorsConfiguration();
     cfg.setAllowedOrigins(List.of(
-      "https://bookpoisk.vercel.app"
+      "https://bookpoisk.vercel.app","http://localhost:5173"
     ));
     cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
     // явно разреши Authorization
