@@ -1,13 +1,13 @@
 // src/shared/api/axios.ts
 import axios from "axios";
 import type { AxiosError, AxiosInstance, CreateAxiosDefaults } from "axios";
+import { authService } from "./http.service";
 import {
   getAccessToken,
+  removeFromStorage,
+  saveRefreshToken,
   saveTokenStorage,
-  // если есть getRefreshToken — можно импортировать, но не обязателен:
-  // getRefreshToken,
 } from "../auth/session";
-import { authService } from "./http.service";
 
 // === Базовый URL бекенда ===
 const BASE_URL = import.meta.env.VITE_API_URL as string;
@@ -27,7 +27,8 @@ const httpAuth: AxiosInstance = axios.create(config);
 const http = httpAuth;
 
 // Если токен уже есть — сразу положим его в дефолтные заголовки
-const initialAccess = getAccessToken();
+const initialAccess =
+  typeof getAccessToken === "function" ? getAccessToken() : null;
 httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
   initialAccess ?? ""
 }`;
@@ -50,20 +51,24 @@ async function doRefresh(): Promise<string> {
   // authService.refresh сам должен добавить Bearer <refresh> (обычно из session)
   // Чтобы не зациклиться — даём "голый" axios:
   // @ts-ignore поддержка возможной сигнатуры refresh(client?: AxiosInstance)
+  console.log(1);
   const resp = await (authService.refresh?.length
     ? authService.refresh()
     : authService.refresh());
   const data = resp?.data ?? {};
 
-  const access: string | undefined = data.accessToken;
+  const access: string | undefined = data.access;
+  const refresh: string | undefined = data.refresh;
 
   if (!access) throw new Error("REFRESH_RESPONSE_INVALID");
+  if (!refresh) throw new Error("REFRESH_RESPONSE_INVALID");
 
   // Сохраняем новые токены (если функция принимает два аргумента — ок; если один — лишний игнорнётся)
   try {
     if (typeof saveTokenStorage === "function") {
       // @ts-ignore поддержать saveTokenStorage(access) и saveTokenStorage(access, refresh)
       saveTokenStorage(access);
+      saveRefreshToken(refresh);
     }
   } catch {
     /* noop */
@@ -132,6 +137,12 @@ httpAuth.interceptors.response.use(
       onTokenRefreshed(newAccess);
       return httpAuth.request(original);
     } catch (e) {
+      // Refresh не удался — чистим и пробрасываем
+      try {
+        if (typeof removeFromStorage === "function") removeFromStorage();
+      } catch {
+        /* noop */
+      }
       return Promise.reject(e);
     } finally {
       isRefreshing = false;
