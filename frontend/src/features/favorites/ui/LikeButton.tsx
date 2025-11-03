@@ -64,7 +64,7 @@ export function LikeButton({ id, className }: Props) {
       type="button"
       variant={likedLocal ? "default" : "outline"}
       size="default"
-      disabled={pending || !!likedLocal}
+      disabled={pending || booksLoading}
       onClick={handleClick}
       // ещё на фазе захвата/нажатия тушим событие — чтоб точно не «протекло»
       onMouseDown={(e) => {
@@ -78,7 +78,7 @@ export function LikeButton({ id, className }: Props) {
       aria-pressed={!!likedLocal}
       className={cn("gap-2", className)}
     >
-      {pending && booksLoading ? (
+      {pending || booksLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : likedLocal ? (
         <HeartOff className="h-4 w-4" />
