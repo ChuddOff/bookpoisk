@@ -23,6 +23,8 @@ import java.util.UUID;
 public class BearerAccessAuthFilter extends OncePerRequestFilter {
   private final JwtUtil jwtUtil;
 
+  // ====================== РАБОТАЕТ И СЛАВА БОГУ =============================
+
   @Override
   protected void doFilterInternal(HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
     throws ServletException, IOException {
@@ -44,10 +46,10 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
     if (dots != 2) { writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "NOT_JWT"); return; }
 
     try {
-      var jws = jwtUtil.parse(token);
+      var jws = jwtUtil.parse(token); // проверка подписи/exp и парсинг
       Claims c = jws.getPayload();
 
-      String sub = c.getSubject();
+      String sub = c.getSubject(); // sub = UUID
       UUID userId;
       try {
         userId = UUID.fromString(sub); // ожидаем sub = локальный UUID пользователя
