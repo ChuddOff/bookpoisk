@@ -103,19 +103,4 @@ public class BookController {
   public List<String> booksSelection() {
     return repo.findAllGenres();
   }
-
-  @GetMapping("/generate/get")
-  public String giveBooksToLM() { // List<Book> вместо String
-    return "";
-  }
-
-  @PostMapping("/generate/post")
-  public void takeBooksToLM(List<Book> books) {
-    generatedBooks = books;
-  }
-
-  @GetMapping("/books_ai")
-  public List<Book> aiToFront() {
-    return generatedBooks;
-  }
 }
