@@ -1,7 +1,15 @@
 // src/features/auth/auth.service.ts
-import { http, httpAuth } from "./axios";
-import { removeFromStorage, saveTokenStorage } from "../auth/session";
+import { httpAuth } from "./axios";
+import {
+  getRefreshToken,
+  removeFromStorage,
+  saveTokenStorage,
+} from "../auth/session";
 import { ENDPOINT } from "../config/endpoints";
+import axios from "axios";
+import { useSWRConfig } from "swr";
+import { useNavigate } from "react-router-dom";
+import { useMe } from "@/entities/user";
 
 export class AuthService {
   /**
@@ -20,13 +28,41 @@ export class AuthService {
    * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
    */
   async refresh() {
-    const res = await http.post<{ accessToken: string }>(ENDPOINT.auth.refresh);
+    const refreshToken = getRefreshToken();
 
-    const token =
-      (res?.data as any)?.accessToken ?? (res?.data as any)?.access ?? null;
+    if (!refreshToken) {
+      return;
+    }
 
-    if (token) saveTokenStorage(token);
+    const client = axios.create({
+      baseURL: import.meta.env.VITE_API_URL as string, // тот же BASE_URL, что в src/shared/api/axios.ts
+      withCredentials: false, // у тебя в axios.ts стоит withCredentials: false для Bearer-only
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        // ставим refresh в Authorization — как ожидает бэкенд
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    });
+    const res = await client.post(ENDPOINT.auth.refresh, undefined);
 
+    // Приводим к ожидаемой форме: bэк может вернуть { accessToken } или { access }
+    const data = (res && (res.data ?? {})) as any;
+    const access = data.accessToken ?? data.access ?? data.access_token ?? null;
+
+    if (!access) {
+      // Если ответ неожиданный — считаем это ошибкой
+      throw new Error("REFRESH_FAILED_NO_ACCESS");
+    }
+
+    // Сохраняем новый access (функция сохраняет в localStorage, как ты просил)
+    try {
+      saveTokenStorage(access);
+    } catch {
+      /* noop */
+    }
+
+    // Возвращаем весь ответ axios (чтобы caller мог получить data и т.п.)
     return res;
   }
 
@@ -37,14 +73,13 @@ export class AuthService {
    * Очищаем локальное хранилище токенов.
    */
   async logout() {
-    return httpAuth.get(ENDPOINT.auth.logout).then((res) => {
-      try {
-        removeFromStorage();
-      } catch {
-        /* noop */
-      }
-      return res;
-    });
+    const { mutate: mutateCache } = useSWRConfig();
+    const { mutate: mutateMe } = useMe();
+    const nav = useNavigate();
+    removeFromStorage();
+    mutateMe();
+    mutateCache(() => true, undefined, { revalidate: false });
+    nav("/");
   }
   async acceptOAuth(accessToken: string) {
     if (!accessToken) throw new Error("No access token provided");

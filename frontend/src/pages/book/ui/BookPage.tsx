@@ -29,9 +29,6 @@ export function BookPage() {
   const { data: resp, isLoading, error } = useBook(id);
   const [lbOpen, setLbOpen] = React.useState(false);
 
-  console.log(resp);
-  console.log(error);
-
   if (isLoading) {
     return (
       <Container className="gap-6">

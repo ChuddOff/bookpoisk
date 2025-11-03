@@ -10,7 +10,6 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -36,6 +35,15 @@ public class JwtUtil {
     }
     this.key = Keys.hmacShaKeyFor(keyBytes);           // ← используем keyBytes, НЕ secret.getBytes(...)
     this.ttlSeconds = ttlSeconds;
+  }
+
+  public String subject(String token) {
+    return Jwts.parser()
+      .verifyWith(key)
+      .build()
+      .parseSignedClaims(token)
+      .getPayload()
+      .getSubject();
   }
 
   public String generateAccess(UUID userId, String username) {

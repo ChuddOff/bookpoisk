@@ -4,7 +4,6 @@ import type { AxiosError, AxiosInstance, CreateAxiosDefaults } from "axios";
 import {
   getAccessToken,
   saveTokenStorage,
-  removeFromStorage,
   // если есть getRefreshToken — можно импортировать, но не обязателен:
   // getRefreshToken,
 } from "../auth/session";
@@ -28,8 +27,7 @@ const httpAuth: AxiosInstance = axios.create(config);
 const http = httpAuth;
 
 // Если токен уже есть — сразу положим его в дефолтные заголовки
-const initialAccess =
-  typeof getAccessToken === "function" ? getAccessToken() : null;
+const initialAccess = getAccessToken();
 httpAuth.defaults.headers.common["Authorization"] = `Bearer ${
   initialAccess ?? ""
 }`;
@@ -58,7 +56,6 @@ async function doRefresh(): Promise<string> {
   const data = resp?.data ?? {};
 
   const access: string | undefined = data.accessToken;
-  const refresh: string | undefined = data.accessToken;
 
   if (!access) throw new Error("REFRESH_RESPONSE_INVALID");
 
@@ -66,7 +63,7 @@ async function doRefresh(): Promise<string> {
   try {
     if (typeof saveTokenStorage === "function") {
       // @ts-ignore поддержать saveTokenStorage(access) и saveTokenStorage(access, refresh)
-      saveTokenStorage(access, refresh);
+      saveTokenStorage(access);
     }
   } catch {
     /* noop */
@@ -135,12 +132,6 @@ httpAuth.interceptors.response.use(
       onTokenRefreshed(newAccess);
       return httpAuth.request(original);
     } catch (e) {
-      // Refresh не удался — чистим и пробрасываем
-      try {
-        if (typeof removeFromStorage === "function") removeFromStorage();
-      } catch {
-        /* noop */
-      }
       return Promise.reject(e);
     } finally {
       isRefreshing = false;
