@@ -23,9 +23,12 @@ public class FavoriteController {
   private final UserRepository usersRepo;
   private final BookRepository bookRepo;
 
-  @PostMapping("/likeBook")
+  @PostMapping(value = "/likeBook", consumes = "application/json")
   @Transactional
   public ResponseEntity<?> likeBook(@RequestBody LikeRequest req, Authentication auth) {
+    if (req == null || req.id() == null) {
+      return ResponseEntity.badRequest().body(Map.of("error","BOOK_ID_REQUIRED"));
+    }
     UUID userId = UUID.fromString(auth.getName());
     UUID bookId = req.id();
 
@@ -35,20 +38,24 @@ public class FavoriteController {
     var fav = new Favorites();
     fav.setUser(usersRepo.getReferenceById(userId));
     fav.setBook(bookRepo.getReferenceById(bookId));
-    favoriteRepo.save(fav);                                 // добавление в БД
+    favoriteRepo.save(fav);
     return ResponseEntity.status(201).body(Map.of("liked", true));
   }
 
-  @PostMapping("/unlikeBook")
+  @PostMapping(value = "/unlikeBook", consumes = "application/json")
   @Transactional
-  public ResponseEntity<?> unlikeBook(@RequestBody LikeRequest req, Authentication auth) {
-    if (req == null || req.id() == null) {
+  public ResponseEntity<?> unlikeBook(
+    @RequestBody(required = false) LikeRequest req,
+    @org.springframework.web.bind.annotation.RequestParam(value = "id", required = false) UUID idParam,
+    Authentication auth
+  ) {
+    UUID bookId = (req != null ? req.id() : idParam);
+    if (bookId == null) {
       return ResponseEntity.badRequest().body(Map.of("error","BOOK_ID_REQUIRED"));
     }
-    UUID userId = UUID.fromString(auth.getName());
-    UUID bookId = req.id();
 
-    favoriteRepo.deleteByUser_IdAndBook_Id(userId, bookId); // удаление из БД
+    UUID userId = UUID.fromString(auth.getName());
+    favoriteRepo.deleteByUser_IdAndBook_Id(userId, bookId);
     return ResponseEntity.ok(Map.of("liked", false));
   }
 }
