@@ -107,45 +107,43 @@ httpAuth.interceptors.response.use(
         errCode === "UNAUTHORIZED" ||
         errCode === "ACCESS_INVALID");
 
-    if (!shouldRefresh) {
-      return Promise.reject(error);
-    }
-
-    if (isRefreshing) {
-      // Уже идёт refresh — ждём результат
-      return new Promise((resolve, reject) => {
-        subscribeTokenRefresh((newAccess) => {
-          try {
-            original._retry = true;
-            original.headers = original.headers ?? {};
-            original.headers["Authorization"] = `Bearer ${newAccess}`;
-            resolve(httpAuth.request(original));
-          } catch (e) {
-            reject(e);
-          }
+    if (shouldRefresh) {
+      if (isRefreshing) {
+        // Уже идёт refresh — ждём результат
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((newAccess) => {
+            try {
+              original._retry = true;
+              original.headers = original.headers ?? {};
+              original.headers["Authorization"] = `Bearer ${newAccess}`;
+              resolve(httpAuth.request(original));
+            } catch (e) {
+              reject(e);
+            }
+          });
         });
-      });
-    }
-
-    // Запускаем refresh сами
-    isRefreshing = true;
-    try {
-      const newAccess = await doRefresh();
-      original._retry = true;
-      original.headers = original.headers ?? {};
-      original.headers["Authorization"] = `Bearer ${newAccess}`;
-      onTokenRefreshed(newAccess);
-      return httpAuth.request(original);
-    } catch (e) {
-      // Refresh не удался — чистим и пробрасываем
-      try {
-        if (typeof removeFromStorage === "function") removeFromStorage();
-      } catch {
-        /* noop */
       }
-      return Promise.reject(e);
-    } finally {
-      isRefreshing = false;
+
+      // Запускаем refresh сами
+      isRefreshing = true;
+      try {
+        const newAccess = await doRefresh();
+        original._retry = true;
+        original.headers = original.headers ?? {};
+        original.headers["Authorization"] = `Bearer ${newAccess}`;
+        onTokenRefreshed(newAccess);
+        return httpAuth.request(original);
+      } catch (e) {
+        // Refresh не удался — чистим и пробрасываем
+        try {
+          if (typeof removeFromStorage === "function") removeFromStorage();
+        } catch {
+          /* noop */
+        }
+        return Promise.reject(e);
+      } finally {
+        isRefreshing = false;
+      }
     }
   }
 );

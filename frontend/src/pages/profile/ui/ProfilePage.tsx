@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Container, Button } from "@/shared/ui"; // подкорректируй пути, если у тебя иначе
 import { useMe } from "@/entities/user";
 import {
-  useBooksForMe,
+  useLikedBooksMe,
   BookRowCard,
   BookRowCardSkeleton,
 } from "@/entities/book";
@@ -32,20 +32,12 @@ export function ProfilePage(): React.JSX.Element {
     data: booksResp,
     isLoading: booksLoading,
     error,
-  } = useBooksForMe(
-    { page: 1, per_page: 20 } as any /* ForMeParams */,
-    {
-      shouldRetryOnError: false,
-      revalidateOnFocus: false,
-    } as SWRConfiguration
-  );
+  } = useLikedBooksMe({
+    shouldRetryOnError: false,
+    revalidateOnFocus: false,
+  } as SWRConfiguration);
 
   // Уебедимся в форматах (у тебя везде приходило { data: { data: Book[] ... } })
-  const items =
-    (booksResp as any)?.data?.data ??
-    (booksResp as any)?.data ??
-    (booksResp as any) ??
-    [];
 
   return (
     <Container className="py-8">
@@ -94,7 +86,9 @@ export function ProfilePage(): React.JSX.Element {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Избранные книги</h2>
               <div className="text-sm text-slate-500">
-                {booksLoading ? "Загрузка..." : `${items.length ?? 0} шт.`}
+                {booksLoading
+                  ? "Загрузка..."
+                  : `${booksResp?.data.length ?? 0} шт.`}
               </div>
             </div>
 
@@ -112,15 +106,17 @@ export function ProfilePage(): React.JSX.Element {
               </div>
             )}
 
-            {!booksLoading && !error && (!items || items.length === 0) && (
-              <div className="rounded-xl border border-line bg-white p-4 text-sm text-slate-600">
-                У вас пока нет отмеченных книг.
-              </div>
-            )}
+            {!booksLoading &&
+              !error &&
+              (!booksResp?.data || booksResp?.data.length === 0) && (
+                <div className="rounded-xl border border-line bg-white p-4 text-sm text-slate-600">
+                  У вас пока нет отмеченных книг.
+                </div>
+              )}
 
-            {!booksLoading && items && items.length > 0 && (
+            {!booksLoading && booksResp?.data && booksResp?.data.length > 0 && (
               <div className="flex flex-col gap-3">
-                {items.map((b: any) => (
+                {booksResp.data.map((b: any) => (
                   <BookRowCard
                     key={b.id}
                     book={b}

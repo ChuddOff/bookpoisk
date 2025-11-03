@@ -30,15 +30,21 @@ export class BookService {
       .then((res) => res.data);
   }
 
-  forMe(params?: ForMeParams) {
+  likedBooks(params?: ForMeParams) {
     return http
-      .get<PagedBooksResponseDto>(getKey(ENDPOINT.bookForMe, params))
+      .get<PagedBooksResponseDto>(getKey(ENDPOINT.likedBooks, params))
       .then((res) => res.data);
   }
 
   like(id: string) {
     return httpAuth
       .post<void>(ENDPOINT.likeBook, { id })
+      .then((res) => res.data);
+  }
+
+  unlike(id: string) {
+    return httpAuth
+      .delete<void>(ENDPOINT.unlikeBook, { data: { id } })
       .then((res) => res.data);
   }
 

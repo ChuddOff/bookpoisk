@@ -1,40 +1,44 @@
 import * as React from "react";
 
-import { useLikeBook } from "@/entities/book";
+import { useLikeBook, useLikedBooksMe } from "@/entities/book";
 import { Button, cn } from "@/shared/ui";
-import { Heart, Loader2 } from "lucide-react";
+import { Heart, HeartOff, Loader2 } from "lucide-react";
 import { useRequireAuth } from "@/app/providers/AuthGateProvider";
+import { useUnlikeBook } from "@/entities/book/api/swr/useUnlikeBook";
+import type { SWRConfiguration } from "swr";
 
 type Props = {
   id: string;
-  /** если хочешь подсвечивать «уже в избранном» — передай true; иначе кнопка просто добавляет */
-  liked?: boolean;
-  onLikedChange?: (v: boolean) => void;
   className?: string;
 };
 
-export function LikeButton({
-  id,
-  liked: likedProp,
-  onLikedChange,
-  className,
-}: Props) {
+export function LikeButton({ id, className }: Props) {
   const requireAuth = useRequireAuth();
   const like = useLikeBook();
+  const unlike = useUnlikeBook();
+
+  const { data: booksResp, isLoading: booksLoading } = useLikedBooksMe({
+    shouldRetryOnError: false,
+    revalidateOnFocus: false,
+  } as SWRConfiguration);
 
   const [pending, setPending] = React.useState(false);
   const [likedLocal, setLikedLocal] = React.useState<boolean | undefined>(
     undefined
   );
 
-  const liked = likedProp ?? likedLocal;
+  React.useEffect(() => {
+    if (booksResp?.data && booksResp.data.map((b) => b.id).includes(id)) {
+      setLikedLocal(true);
+    }
+  }, [booksResp]);
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     // важно: останавливаем событие, чтобы родительская карточка/редирект не сработали
     e.preventDefault();
     e.stopPropagation();
 
-    if (pending || liked) return;
+    if (pending) return;
 
     // если не авторизован — откроется модалка и действие выполнится после логина (через intent)
     const ok = requireAuth({ type: "like-book", bookId: id });
@@ -42,9 +46,8 @@ export function LikeButton({
 
     try {
       setPending(true);
-      await like(id);
+      likedLocal ? await unlike(id) : await like(id);
       setLikedLocal(true);
-      onLikedChange?.(true);
     } finally {
       setPending(false);
     }
@@ -53,9 +56,9 @@ export function LikeButton({
   return (
     <Button
       type="button"
-      variant={liked ? "default" : "outline"}
+      variant={likedLocal ? "default" : "outline"}
       size="default"
-      disabled={pending || !!liked}
+      disabled={pending || !!likedLocal}
       onClick={handleClick}
       // ещё на фазе захвата/нажатия тушим событие — чтоб точно не «протекло»
       onMouseDown={(e) => {
@@ -66,15 +69,17 @@ export function LikeButton({
         e.preventDefault();
         e.stopPropagation();
       }}
-      aria-pressed={!!liked}
+      aria-pressed={!!likedLocal}
       className={cn("gap-2", className)}
     >
-      {pending ? (
+      {pending && booksLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
+      ) : likedLocal ? (
+        <HeartOff className="h-4 w-4" />
       ) : (
         <Heart className="h-4 w-4" />
       )}
-      {liked ? "В избранном" : "В избранное"}
+      {likedLocal ? "Убрать из избранного" : "В избранное"}
     </Button>
   );
 }
