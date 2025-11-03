@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface FavoriteRepository extends JpaRepository<Favorites, UUID> {
 
-  @EntityGraph(attributePaths = {"book", "book.genre"})
+  @EntityGraph(attributePaths = {"book", "book.genres"})
   List<Favorites> findByUser_IdOrderByAddedAtDesc(UUID userId);
   boolean existsByUser_IdAndBook_Id(UUID userId, UUID bookId);
   void deleteByUser_IdAndBook_Id(UUID userId, UUID bookId);
