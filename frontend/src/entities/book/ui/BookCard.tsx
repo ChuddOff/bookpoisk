@@ -6,8 +6,6 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from "@/shared/ui";
 type Props = { book: BookEntity; onLiked?: (id: string) => void };
 
 export function BookCard({ book }: Props) {
-  const [liked, setLiked] = React.useState(false);
-
   const go = React.useCallback(() => {
     window.location.href = `/book/${book.id}`;
   }, [book.id]);
@@ -60,12 +58,7 @@ export function BookCard({ book }: Props) {
           ) : null}
 
           {/* Кнопка лайка не пробивает клики наружу — см. обработчики внутри LikeButton */}
-          <LikeButton
-            id={book.id}
-            liked={liked}
-            onLikedChange={setLiked}
-            className="w-full"
-          />
+          <LikeButton id={book.id} className="w-full" />
         </div>
       </CardContent>
     </Card>

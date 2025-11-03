@@ -5,7 +5,9 @@ export const ENDPOINT = {
   book: "/book",
   books: "/books",
   bookForMe: "/bookForMe",
+  likedBooks: "/likedBooks",
   likeBook: "/likeBook",
+  unlikeBook: "/unlikeBook",
   genres: "/genres",
   auth: {
     googleStart: "/oauth2/authorization/google",
