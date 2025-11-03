@@ -42,18 +42,16 @@ public class FavoriteController {
     return ResponseEntity.status(201).body(Map.of("liked", true));
   }
 
-  @PostMapping(value = "/unlikeBook", consumes = "application/json")
+  @PostMapping(value="/unlikeBook", consumes="application/json")
   @Transactional
-  public ResponseEntity<?> unlikeBook(
-    @RequestBody(required = false) LikeRequest req,
-    @org.springframework.web.bind.annotation.RequestParam(value = "id", required = false) UUID idParam,
-    Authentication auth
-  ) {
-    UUID bookId = (req != null ? req.id() : idParam);
+  public ResponseEntity<?> unlikeBook(@RequestBody LikeRequest req, Authentication auth) {
+    UUID bookId = (req != null ? req.effectiveId() : null);
     if (bookId == null) {
-      return ResponseEntity.badRequest().body(Map.of("error","BOOK_ID_REQUIRED"));
+      return ResponseEntity.badRequest().body(Map.of(
+        "error","BOOK_ID_REQUIRED",
+        "hint","send {\"id\":\"<uuid>\"} or {\"data\":{\"id\":\"<uuid>\"}}"
+      ));
     }
-
     UUID userId = UUID.fromString(auth.getName());
     favoriteRepo.deleteByUser_IdAndBook_Id(userId, bookId);
     return ResponseEntity.ok(Map.of("liked", false));
