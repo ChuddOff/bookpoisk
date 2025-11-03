@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-public class FavouriteController {
+public class FavoriteController {
   private final FavoriteRepository favoriteRepo;
   private final UserRepository usersRepo;
   private final BookRepository bookRepo;
