@@ -44,7 +44,7 @@ export class BookService {
 
   unlike(id: string) {
     return httpAuth
-      .delete<void>(ENDPOINT.unlikeBook, { data: { id } })
+      .post<void>(ENDPOINT.unlikeBook, { data: { id } })
       .then((res) => res.data);
   }
 
