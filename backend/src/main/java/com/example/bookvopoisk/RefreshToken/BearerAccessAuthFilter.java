@@ -73,8 +73,9 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
 
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    // не фильтруем preflight, чтобы не мешать CORS
-    return "OPTIONS".equalsIgnoreCase(request.getMethod());
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) return true;
+    String p = request.getRequestURI();
+    return "/auth/refresh".equals(p); // refresh эндпоинт игнорим в access-фильтре
   }
 
   private void writeError(HttpServletResponse resp, HttpStatus status, String code, String reason) throws IOException {

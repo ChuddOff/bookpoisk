@@ -49,9 +49,9 @@ public class SecurityConfig {
   private final AppOAuth2UserService appOAuth2UserService;
   private final JwtLoginSuccessHandler successHandler;
   private final JwtUtil jwt;
-  private final UserRepository usersRepo;
 
-  @Value("${app.cors.allowed-origins}") private String allowedOrigins;
+  @Value("${app.cors.allowed-origins:https://bookpoisk.vercel.app,http://localhost:5173}")
+  private String allowedOrigins;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -61,34 +61,21 @@ public class SecurityConfig {
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**", "/books_ai").permitAll()
-        .requestMatchers(org.springframework.http.HttpMethod.POST, "/auth/refresh").permitAll()
-        .requestMatchers("/login**", "/oauth2/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
+        .requestMatchers("/login**", "/oauth2/**").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())
       .formLogin(f -> f.disable())
-
-      // куки JSESSIONID не нужны; контекст аутентификации живёт ровно в рамках запроса и создаётся заново для каждого запроса на основе токена.
-      // отключаем их
       .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-      .oauth2Login(oauth -> oauth // включается весь механизм регистрации через Google, редирект на Google по считанным из application.yml данным
-        // google возвращает данные, которые spring также проверяет на endpoint {baseUrl}/login/oauth2/code/google?code=...&state=...
-        // далее spring делаем post запрос, прикладывая client_id, client_secret, code, redirect_uri
-        // обратно приходит json и далее spring вызывает метод ниже
+      .oauth2Login(oauth -> oauth
         .userInfoEndpoint(u -> u
           .oidcUserService(appOidcUserService)
           .userService(appOAuth2UserService)
-        ) // обработка полученных данных
-        // успех логина → редирект на фронт с твоим JWT (прописано в JwtLoginSuccessHandler)
+        )
         .successHandler(successHandler)
       )
-      // Итого:
-      // oauth2Login(...) — включает OAuth2/OIDC-логин.
-      // .userInfoEndpoint(...) — настраивает этап “UserInfo” (когда после обмена code→tokens Spring идёт на Google UserInfo).
-      // userService(...) указывает какую реализацию интерфейса OAuth2UserService<OAuth2UserRequest, OAuth2User> использовать.,
-      // Это чисто серверный хук “обработать профиль, сопоставить с БД, вернуть principal”.
+      // Единственный JWT-фильтр:
       .addFilterBefore(new BearerAccessAuthFilter(jwt), UsernamePasswordAuthenticationFilter.class)
       .exceptionHandling(ex -> ex.authenticationEntryPoint((req, resp, e) -> {
         if (!resp.isCommitted()) {
@@ -97,18 +84,20 @@ public class SecurityConfig {
           resp.getWriter().write("{\"error\":\"UNAUTHORIZED\"}");
         }
       }));
+
     return http.build();
   }
+
   // Какие сайты могут слать запрос на мой backend
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     var cfg = new CorsConfiguration();
     cfg.setAllowedOrigins(List.of(
-      "https://bookpoisk.vercel.app","http://localhost:5173"
+      "https://bookpoisk.vercel.app", "http://localhost:5173"
     ));
-    cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+    cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     // явно разреши Authorization
-    cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin","X-Requested-With"));
+    cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
     // ничего не читаем из Set-Cookie → credentials НЕ нужны
     cfg.setAllowCredentials(false);
     var source = new UrlBasedCorsConfigurationSource();
@@ -116,33 +105,7 @@ public class SecurityConfig {
     return source;
   }
 // Проверка наличия JWT-токена, и если он есть, то пользователь является аутентифицированным и открывается доступ к определенным endpoint.
-  @Bean
-  public OncePerRequestFilter jwtAuthFilter() {
-    return new OncePerRequestFilter() {
-      @Override
-      protected void doFilterInternal(HttpServletRequest request,
-                                      HttpServletResponse response,
-                                      FilterChain chain) throws ServletException, IOException {
-        String auth = request.getHeader("Authorization"); // если он вида Bearer <jwt>, вырезает токен.
-        if (auth != null && auth.startsWith("Bearer ")) {
-          String token = auth.substring(7);
-          try {
-            var jws = jwt.parse(token); // если подпись/срок неверны — словится исключение, фильтр никого не аутентифицирует.
-            UUID userId = UUID.fromString(jws.getPayload().getSubject()); // достаётся ID пользователя из токена:
-            var user = usersRepo.findById(userId).orElse(null); // проверяет пользователя в БД:
-            if (user != null && user.isActive()) {
-              // кладёт аутентификацию в SecurityContext:
-              var at = new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of());
-              SecurityContextHolder.getContext().setAuthentication(at);
-            }
-          } catch (Exception ignored) {
-          }
-        }
-        // Пропускает запрос дальше:
-        chain.doFilter(request, response);
-      }
-    };
-  }
+
 
   @Bean
   public PasswordEncoder passwordEncoder() {
