@@ -17,7 +17,11 @@ export function LikeButton({ id, className }: Props) {
   const like = useLikeBook();
   const unlike = useUnlikeBook();
 
-  const { data: booksResp, isLoading: booksLoading } = useLikedBooksMe({
+  const {
+    data: booksResp,
+    isLoading: booksLoading,
+    mutate: mutateLikedBooks,
+  } = useLikedBooksMe({
     shouldRetryOnError: false,
     revalidateOnFocus: false,
   } as SWRConfiguration);
@@ -47,6 +51,8 @@ export function LikeButton({ id, className }: Props) {
     try {
       setPending(true);
       likedLocal ? await unlike(id) : await like(id);
+
+      await mutateLikedBooks();
       setLikedLocal(true);
     } finally {
       setPending(false);
