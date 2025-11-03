@@ -31,20 +31,22 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
         ) : null}
       </div>
 
-      <div className="min-w-0 flex-1">
-        {/* было truncate — убираем, разрешаем переносы */}
-        <div className="line-clamp-2 break-words text-sm font-medium text-ink">
-          {book.title}
-        </div>
+      <div className="min-w-0 flex-1 flex flex-col justify-between">
+        <div className="min-w-0 flex-1 flex flex-col">
+          {/* было truncate — убираем, разрешаем переносы */}
+          <div className="line-clamp-2 break-words text-sm font-medium text-ink">
+            {book.title}
+          </div>
 
-        <div className="mt-0.5 whitespace-normal break-words text-xs text-slate-600">
-          {book.author}
-          {book.year ? ` • ${book.year}` : ""}
-          {book.pages ? ` • ${book.pages} стр.` : ""}
+          <div className="mt-0.5 whitespace-normal break-words text-xs text-slate-600">
+            {book.author}
+            {book.year ? ` • ${book.year}` : ""}
+            {book.pages ? ` • ${book.pages} стр.` : ""}
+          </div>
         </div>
 
         {book.genre && (
-          <div className="flex-1 h-h-full items-end flex flex-wrap gap-1">
+          <div className=" lex flex-wrap gap-1">
             {book.genre.map((g) => (
               <span
                 key={g}
