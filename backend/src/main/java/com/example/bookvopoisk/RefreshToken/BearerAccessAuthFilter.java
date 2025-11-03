@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
 
+@Slf4j
 @RequiredArgsConstructor
 public class BearerAccessAuthFilter extends OncePerRequestFilter {
   private final JwtUtil jwtUtil;
@@ -29,6 +31,8 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
     throws ServletException, IOException {
 
+    log.debug("JWT-FILTER path={} method={} hasAuthHdr={}",
+      req.getRequestURI(), req.getMethod(), req.getHeader("Authorization") != null);
     String auth = req.getHeader("Authorization");
     if (auth != null && auth.startsWith("Bearer ")) {
       String token = auth.substring(7).trim();
@@ -46,6 +50,7 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
         UUID userId = UUID.fromString(c.getSubject()); // sub = локальный UUID
         var authn = new UsernamePasswordAuthenticationToken(userId.toString(), null, Collections.emptyList());
         SecurityContextHolder.getContext().setAuthentication(authn);
+        log.debug("JWT-FILTER OK userId={}", userId);
       } catch (ExpiredJwtException eje) {
         writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_EXPIRED", null); return;
       } catch (SignatureException se) {
@@ -56,6 +61,7 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
         writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID_SUBJECT", "SUB_NOT_UUID"); return;
       }
       // ---- конец блока парсинга ----
+
     }
 
     // ВСЕГДА пускаем дальше, чтобы не маскировать ошибки приложений
