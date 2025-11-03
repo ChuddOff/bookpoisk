@@ -30,47 +30,36 @@ public class BearerAccessAuthFilter extends OncePerRequestFilter {
     throws ServletException, IOException {
 
     String auth = req.getHeader("Authorization");
-    if (auth == null || !auth.startsWith("Bearer ")) {
-      chain.doFilter(req, resp);
-      return;
-    }
-
-    String token = auth.substring(7).trim();
-    // срежем случайные кавычки: "aaa.bbb.ccc"
-    if (token.length() >= 2 && token.charAt(0) == '"' && token.charAt(token.length() - 1) == '"') {
-      token = token.substring(1, token.length() - 1);
-    }
-    // быстрый sanity-чек: JWT = 3 части
-    int dots = 0;
-    for (int i = 0; i < token.length(); i++) if (token.charAt(i) == '.') dots++;
-    if (dots != 2) { writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "NOT_JWT"); return; }
-
-    try {
-      var jws = jwtUtil.parse(token); // проверка подписи/exp и парсинг
-      Claims c = jws.getPayload();
-
-      String sub = c.getSubject(); // sub = UUID
-      UUID userId;
-      try {
-        userId = UUID.fromString(sub); // ожидаем sub = локальный UUID пользователя
-      } catch (IllegalArgumentException iae) {
-        writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID_SUBJECT", "SUB_NOT_UUID");
-        return;
+    if (auth != null && auth.startsWith("Bearer ")) {
+      String token = auth.substring(7).trim();
+      if (token.length() >= 2 && token.charAt(0) == '"' && token.charAt(token.length() - 1) == '"') {
+        token = token.substring(1, token.length() - 1);
       }
+      // быстрый sanity-чек
+      int dots = 0; for (int i = 0; i < token.length(); i++) if (token.charAt(i) == '.') dots++;
+      if (dots != 2) { writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "NOT_JWT"); return; }
 
-      var authn = new UsernamePasswordAuthenticationToken(userId.toString(), null, Collections.emptyList());
-      SecurityContextHolder.getContext().setAuthentication(authn);
-      chain.doFilter(req, resp);
-
-    } catch (ExpiredJwtException eje) {
-      writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_EXPIRED", null);
-    } catch (SignatureException se) {
-      writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "BAD_SIGNATURE");
-    } catch (MalformedJwtException mje) {
-      writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "MALFORMED");
-    } catch (Exception e) {
-      writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", e.getClass().getSimpleName());
+      // ---- ловим только ошибки ПАРСИНГА ----
+      try {
+        var jws = jwtUtil.parse(token);
+        var c = jws.getPayload();
+        UUID userId = UUID.fromString(c.getSubject()); // sub = локальный UUID
+        var authn = new UsernamePasswordAuthenticationToken(userId.toString(), null, Collections.emptyList());
+        SecurityContextHolder.getContext().setAuthentication(authn);
+      } catch (ExpiredJwtException eje) {
+        writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_EXPIRED", null); return;
+      } catch (SignatureException se) {
+        writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "BAD_SIGNATURE"); return;
+      } catch (MalformedJwtException mje) {
+        writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID", "MALFORMED"); return;
+      } catch (IllegalArgumentException iae) {
+        writeError(resp, HttpStatus.UNAUTHORIZED, "ACCESS_INVALID_SUBJECT", "SUB_NOT_UUID"); return;
+      }
+      // ---- конец блока парсинга ----
     }
+
+    // ВСЕГДА пускаем дальше, чтобы не маскировать ошибки приложений
+    chain.doFilter(req, resp);
   }
 
   @Override
