@@ -6,7 +6,6 @@ import { Heart, HeartOff, Loader2 } from "lucide-react";
 import { useRequireAuth } from "@/app/providers/AuthGateProvider";
 import { useUnlikeBook } from "@/entities/book/api/swr/useUnlikeBook";
 import type { SWRConfiguration } from "swr";
-import { set } from "date-fns";
 
 type Props = {
   id: string;
