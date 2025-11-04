@@ -1,22 +1,38 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import type { BookEntity } from "@/entities/book";
+import { useLikedBooksMe, type BookEntity } from "@/entities/book";
 import { cn } from "@/shared/ui";
+import { X } from "lucide-react";
+import type { SWRConfiguration } from "swr";
+import { useUnlikeBook } from "../api/swr/useUnlikeBook";
 
 type Props = {
   book: BookEntity;
   onNavigate?: () => void;
+  showX?: boolean;
   className?: string;
 };
 
-export function BookRowCard({ book, onNavigate, className }: Props) {
+export function BookRowCard({ book, showX, className }: Props) {
+  const { mutate: mutateLikedBooks } = useLikedBooksMe({
+    shouldRetryOnError: false,
+    revalidateOnFocus: false,
+  } as SWRConfiguration);
+
+  const unlike = useUnlikeBook();
+
+  const nav = useNavigate();
+
   const cover = book.cover || book.photos?.[0];
+  const onNavigate = () => {
+    nav(`/book/${book.id}`);
+    window.scrollTo(0, 0);
+  };
   return (
-    <Link
-      to={`/book/${book.id}`}
+    <div
       onClick={onNavigate}
       className={cn(
-        "group flex gap-3 rounded-lg border border-line bg-white p-2 transition-colors hover:bg-soft",
+        "group flex gap-3 rounded-lg border border-line bg-white p-2 transition-colors hover:bg-soft relative",
         className
       )}
     >
@@ -58,7 +74,21 @@ export function BookRowCard({ book, onNavigate, className }: Props) {
           </div>
         )}
       </div>
-    </Link>
+
+      {showX && (
+        <X
+          size={20}
+          className="absolute right-2 top-2 text-brand cursor-pointer"
+          onClick={async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            await unlike(book.id);
+            mutateLikedBooks();
+          }}
+        />
+      )}
+    </div>
   );
 }
 
