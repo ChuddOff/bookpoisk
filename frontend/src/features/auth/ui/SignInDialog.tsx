@@ -29,24 +29,26 @@ export function SignInDialog({ open, onOpenChange, intent }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[420px] !animate-none">
+      <DialogContent className="w-[420px] !animate-none max-w-[90vw]">
         <DialogHeader>
-          <DialogTitle>Вход</DialogTitle>
+          <DialogTitle className="text-lg">Вход</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-slate-600">
-          Чтобы продолжить, войдите через Google. Мы не передаём ваш userId в
-          запросах — сервер определяет вас по токену.
+        <p className="text-md text-slate-600">
+          {`Чтобы продолжить, войдите через Google.`}
+          <br />
+          {`Мы не сохраняем ваши
+          данные.`}
         </p>
         <div className="mt-4 flex gap-2">
-          <Button className="w-full" onClick={start}>
-            Войти через Google
-          </Button>
           <Button
             variant="outline"
             className="w-full"
             onClick={() => onOpenChange(false)}
           >
             Отмена
+          </Button>
+          <Button className="w-full" onClick={start}>
+            Войти через Google
           </Button>
         </div>
       </DialogContent>
