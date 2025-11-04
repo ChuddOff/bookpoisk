@@ -1,14 +1,13 @@
-import useSWR, { type SWRConfiguration } from "swr";
-
-import type { PagedBooksResponseDto } from "@/entities/book/model";
+import useSWR, { type BareFetcher, type SWRConfiguration } from "swr";
 import { bookService } from "../book.service";
 import { ENDPOINT } from "@/shared";
+import type { LikedBooks } from "../../model/dto";
 
-export function useLikedBooksMe(cfg?: SWRConfiguration<PagedBooksResponseDto>) {
+export function useLikedBooksMe(
+  config?:
+    | SWRConfiguration<LikedBooks, any, BareFetcher<LikedBooks>>
+    | undefined
+) {
   const key = ENDPOINT.likedBooks;
-  return useSWR<PagedBooksResponseDto>(
-    key,
-    () => bookService.likedBooks(),
-    cfg
-  );
+  return useSWR<LikedBooks>(key, () => bookService.likedBooks(), config);
 }

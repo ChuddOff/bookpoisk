@@ -34,6 +34,8 @@ export function LikeButton({ id, className }: Props) {
   React.useEffect(() => {
     if (booksResp?.data && booksResp.data.map((b) => b.id).includes(id)) {
       setLikedLocal(true);
+    } else {
+      setLikedLocal(false);
     }
   }, [booksResp]);
 
