@@ -6,6 +6,7 @@ import { Heart, HeartOff, Loader2 } from "lucide-react";
 import { useRequireAuth } from "@/app/providers/AuthGateProvider";
 import { useUnlikeBook } from "@/entities/book/api/swr/useUnlikeBook";
 import type { SWRConfiguration } from "swr";
+import { set } from "date-fns";
 
 type Props = {
   id: string;
@@ -36,9 +37,6 @@ export function LikeButton({ id, className }: Props) {
       console.log(true);
 
       setLikedLocal(true);
-    } else {
-      console.log(false);
-      setLikedLocal(false);
     }
   }, [booksResp]);
 
@@ -56,6 +54,7 @@ export function LikeButton({ id, className }: Props) {
     try {
       setPending(true);
       likedLocal ? await unlike(id) : await like(id);
+      setLikedLocal(!likedLocal);
 
       await mutateLikedBooks();
       setLikedLocal(true);
@@ -63,7 +62,6 @@ export function LikeButton({ id, className }: Props) {
       setPending(false);
     }
   };
-  console.log(likedLocal);
 
   return (
     <Button
