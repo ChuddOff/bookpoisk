@@ -31,7 +31,7 @@ export function SignInDialog({ open, onOpenChange, intent }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[420px] !animate-none max-w-[90vw]">
         <DialogHeader>
-          <DialogTitle className="text-lg" tabIndex={0}>
+          <DialogTitle className="text-lg focus:outline-none" tabIndex={0}>
             Вход
           </DialogTitle>
         </DialogHeader>
