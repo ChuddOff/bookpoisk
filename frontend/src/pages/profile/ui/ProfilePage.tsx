@@ -1,6 +1,5 @@
 // src/pages/profile/ui/ProfilePage.tsx
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
 
 import { Container, Button } from "@/shared/ui"; // подкорректируй пути, если у тебя иначе
 import { useMe } from "@/entities/user";
@@ -20,7 +19,6 @@ import { useLogout } from "@/features/auth/hooks/useLogout";
  */
 export function ProfilePage(): React.JSX.Element {
   const logout = useLogout();
-  const nav = useNavigate();
 
   // профиль пользователя
   const { data: meResp, isLoading: meLoading } = useMe();
@@ -117,11 +115,7 @@ export function ProfilePage(): React.JSX.Element {
             {!booksLoading && booksResp?.data && booksResp?.data.length > 0 && (
               <div className="flex flex-col gap-3">
                 {booksResp.data.map((b: any) => (
-                  <BookRowCard
-                    key={b.id}
-                    book={b}
-                    onNavigate={() => nav(`/book/${b.id}`)}
-                  />
+                  <BookRowCard key={b.id} book={b} showX />
                 ))}
               </div>
             )}
