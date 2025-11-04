@@ -1,7 +1,6 @@
 // src/features/favorites/api/useLikeBook.ts
 
 import { bookService } from "@/entities/book"; // твой инстанс сервиса
-import { toast } from "@/shared/ui";
 
 /**
  * Возвращает обычную функцию (id) => Promise<void>,
@@ -10,7 +9,5 @@ import { toast } from "@/shared/ui";
 export function useUnlikeBook(): (id: string) => Promise<void> {
   return async (bookId: string) => {
     await bookService.unlike(bookId);
-
-    toast.success("Удалено из избранного");
   };
 }
