@@ -92,7 +92,7 @@ export function LikeButton({ id, className }: Props) {
       ) : (
         <Heart className="h-4 w-4" />
       )}
-      {likedLocal ? "Убрать из избранного" : "В избранное"}
+      {likedLocal ? "Убрать" : "В избранное"}
     </Button>
   );
 }
