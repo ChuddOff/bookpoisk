@@ -33,8 +33,11 @@ export function LikeButton({ id, className }: Props) {
 
   React.useEffect(() => {
     if (booksResp?.data && booksResp.data.map((b) => b.id).includes(id)) {
+      console.log(true);
+
       setLikedLocal(true);
     } else {
+      console.log(false);
       setLikedLocal(false);
     }
   }, [booksResp]);
@@ -60,6 +63,7 @@ export function LikeButton({ id, className }: Props) {
       setPending(false);
     }
   };
+  console.log(likedLocal);
 
   return (
     <Button
