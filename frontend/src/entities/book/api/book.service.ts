@@ -8,6 +8,7 @@ import type {
 } from "@/entities/book/model";
 import { ENDPOINT, getKey } from "@/shared";
 import { http, httpAuth } from "@/shared/api/axios";
+import type { LikedBooks } from "../model/dto";
 
 export type ListParams = {
   page?: number;
@@ -21,8 +22,6 @@ export type ListParams = {
   pageTo?: number;
 };
 
-export type ForMeParams = { page?: number; per_page?: number };
-
 export class BookService {
   list(params?: ListParams): Promise<PagedBooksResponseDto> {
     return http
@@ -30,10 +29,8 @@ export class BookService {
       .then((res) => res.data);
   }
 
-  likedBooks(params?: ForMeParams) {
-    return http
-      .get<PagedBooksResponseDto>(getKey(ENDPOINT.likedBooks, params))
-      .then((res) => res.data);
+  likedBooks() {
+    return http.get<LikedBooks>(ENDPOINT.likedBooks).then((res) => res.data);
   }
 
   like(id: string) {
