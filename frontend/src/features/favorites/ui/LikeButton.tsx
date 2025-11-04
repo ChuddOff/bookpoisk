@@ -1,5 +1,4 @@
 import * as React from "react";
-
 import { useLikeBook, useLikedBooksMe } from "@/entities/book";
 import { Button, cn } from "@/shared/ui";
 import { Heart, HeartOff, Loader2 } from "lucide-react";
@@ -27,36 +26,42 @@ export function LikeButton({ id, className }: Props) {
   } as SWRConfiguration);
 
   const [pending, setPending] = React.useState(false);
-  const [likedLocal, setLikedLocal] = React.useState<boolean | undefined>(
-    undefined
-  );
+  const [likedLocal, setLikedLocal] = React.useState<boolean>(false);
 
+  // синхронизация локального состояния с ответом SWR
   React.useEffect(() => {
-    if (booksResp?.data && booksResp.data.map((b) => b.id).includes(id)) {
-      console.log(true);
-
-      setLikedLocal(true);
-    }
-  }, [booksResp]);
+    const isLiked = !!booksResp?.data?.some((b) => b.id === id);
+    setLikedLocal(isLiked);
+  }, [booksResp, id]);
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    // важно: останавливаем событие, чтобы родительская карточка/редирект не сработали
     e.preventDefault();
     e.stopPropagation();
 
     if (pending) return;
 
-    // если не авторизован — откроется модалка и действие выполнится после логина (через intent)
     const ok = requireAuth({ type: "like-book", bookId: id });
     if (!ok) return;
 
-    try {
-      setPending(true);
-      likedLocal ? await unlike(id) : await like(id);
-      setLikedLocal(!likedLocal);
+    const wasLiked = likedLocal; // сохраним предыдущее значение для отката
+    // оптимистично меняем UI
+    setLikedLocal(!wasLiked);
+    setPending(true);
 
+    try {
+      if (wasLiked) {
+        await unlike(id);
+      } else {
+        await like(id);
+      }
+
+      // обновляем кэш/ревалидируем — mutate() без аргументов перезапросит сервер
       await mutateLikedBooks();
-      setLikedLocal(true);
+      // НЕ делать setLikedLocal(true) тут — mutate/реакция useEffect приведёт к корректному состоянию
+    } catch (err) {
+      // откатим локальное состояние при ошибке
+      setLikedLocal(wasLiked);
+      console.error("Ошибка при (un)like:", err);
     } finally {
       setPending(false);
     }
@@ -69,7 +74,6 @@ export function LikeButton({ id, className }: Props) {
       size="default"
       disabled={pending || booksLoading}
       onClick={handleClick}
-      // ещё на фазе захвата/нажатия тушим событие — чтоб точно не «протекло»
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
