@@ -1,6 +1,8 @@
-from typing import TypedDict, Dict, Any, Optional
+from typing import Dict, Any, Optional
+
+from pydantic import BaseModel
 
 
-class Response(TypedDict):
-    status: str
+class Response(BaseModel):
+    status: int
     content: Optional[Dict[Any, Any]]
