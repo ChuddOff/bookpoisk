@@ -19,3 +19,10 @@ dist/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+/parser/books.json
+/parser/old_books2.jsonl
+/parser/backup_books.jsonl
+/parser/book_titles.txt
+/parser/checkpoint.txt
+/parser/old_books1.json
+/parser/backup_books.jsonl

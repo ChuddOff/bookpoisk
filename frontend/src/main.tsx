@@ -1,10 +1,19 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { RouterProvider } from "react-router-dom";
+import { SWRProvider } from "@/app/providers";
+import { AppToaster } from "@/shared/ui";
+import { AppRouter } from "./app/router";
+import { AuthGateProvider } from "./app/providers/AuthGateProvider";
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <SWRProvider>
+      <AuthGateProvider>
+        <RouterProvider router={AppRouter} />
+        <AppToaster />
+      </AuthGateProvider>
+    </SWRProvider>
+  </React.StrictMode>
+);

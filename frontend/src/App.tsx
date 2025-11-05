@@ -1,35 +1,32 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/shared/ui";
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="min-h-screen w-full bg-soft">
+      <div className="mx-auto max-w-[1440px] px-[12px] min-[568px]:px-[18px] tablet:px-[24px] min-[992px]:px-[16px] min-[1200px]:px-[30px] lg:px-[60px] py-8">
+        <div className="mx-auto max-w-[880px] space-y-6">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
+            Буквапоиск — v4 без var()
+          </h1>
 
-export default App
+          <div className="flex items-center gap-3">
+            <Input placeholder="Поиск..." className="max-w-sm" />
+            <Button>Найти</Button>
+            <Button variant="outline" asChild>
+              <a href="/">Ссылка как кнопка</a>
+            </Button>
+          </div>
+
+          <Card className="rounded-xl shadow-card border-line">
+            <CardHeader>
+              <CardTitle>Карточка</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600">Проверка rounded/border/shadow</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
