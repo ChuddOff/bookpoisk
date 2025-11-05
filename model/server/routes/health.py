@@ -1,20 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from server.core import manager
-from server.models import Response, ClientPing, ClientResponse
+from server.models import Response
 
-health_router = APIRouter()
+health_router = APIRouter(prefix="/health", tags=["Server status"])
 
 
-@health_router.get("/health")
+@health_router.get("/")
 async def health() -> Response:
     return Response(status=200, content={"health": "server is alive"})
-
-@health_router.post("/ping")
-async def ping(req: ClientPing) -> Response:
-    client = manager.heartbeat(req.client_id, req.ping)
-
-    if not client:
-        return Response(status=404, content={"error": "client not found"})
-
-    return Response(status=200, content={"client": ClientResponse(**client.to_dict())})
