@@ -3,8 +3,7 @@ import os
 from dotenv import load_dotenv
 from psycopg2.pool import SimpleConnectionPool
 
-from server.services import ClientManager
-from server.services.client_store import MemoryClientStore, RedisClientStore
+from server.services import ClientManager, TaskManager, MemoryClientStore, RedisClientStore
 
 load_dotenv()
 
@@ -16,6 +15,9 @@ DB_CONFIG = {
     "password": os.getenv("DATABASE_PASSWORD")
 }
 
+BACKEND_URL = os.getenv("BACKEND_URL")
+
 store = MemoryClientStore()
 manager = ClientManager(store)
+task_manager = TaskManager()
 pool = SimpleConnectionPool(1, 10, **DB_CONFIG)

@@ -21,8 +21,8 @@ class MemoryClientStore(BaseClientStore):
         self.ttl = ttl
 
     def register(self, client_id: str, client: Client) -> Optional[Client]:
-        client.last_updated = datetime.now(timezone.utc)
-        self.clients[client_id] = client.to_dict()
+        client.last_update = datetime.now(timezone.utc).isoformat()
+        self.clients[client_id] = client.model_dump()
         return self.get(client_id)
 
     def get(self, client_id: str) -> Optional[Client]:
@@ -37,14 +37,13 @@ class MemoryClientStore(BaseClientStore):
 
     def update(self, client_id: str) -> Optional[Client]:
         if client_id in self.clients:
-            self.clients[client_id]["last_updated"] = datetime.now(timezone.utc)
+            self.clients[client_id]["last_update"] = datetime.now(timezone.utc)
         return self.get(client_id)
 
     def _cleanup(self):
         now = datetime.now(timezone.utc)
 
         for client_id, client in list(self.clients.items()):
-            print(client["last_update"])
             if (now - datetime.fromisoformat(client["last_update"])).total_seconds() > self.ttl:
                 self.delete(client_id)
 
@@ -55,8 +54,8 @@ class RedisClientStore(BaseClientStore):
         self.ttl = ttl
 
     def register(self, client_id: str, client: Client) -> Optional[Client]:
-        client.last_updated = datetime.now(timezone.utc).isoformat()
-        self.redis.setex(f"client:{client_id}", self.ttl, json.dumps(client.to_dict()))
+        client.last_update = datetime.now(timezone.utc).isoformat()
+        self.redis.setex(f"client:{client_id}", self.ttl, json.dumps(client))
         return self.get(client_id)
 
     def get(self, client_id: str) -> Optional[Client]:
@@ -76,7 +75,7 @@ class RedisClientStore(BaseClientStore):
     def delete(self, client_id: str) -> Optional[Client]:
         client = self.get(client_id)
         self.redis.delete(f"client:{client_id}")
-        return Client(**client.to_dict())
+        return client
 
     def update(self, client_id: str) -> Optional[Client]:
         key = f"client:{client_id}"
@@ -84,7 +83,7 @@ class RedisClientStore(BaseClientStore):
 
         if raw:
             data = json.loads(raw)
-            data["last_updated"] = datetime.now(timezone.utc).isoformat()
+            data["last_update"] = datetime.now(timezone.utc).isoformat()
             self.redis.setex(key, self.ttl, json.dumps(data))
             return self.get(client_id)
 

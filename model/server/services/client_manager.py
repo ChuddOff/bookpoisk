@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from server.models import ClientResponse, Client
+from server.models import Client
 from server.services.client_store import BaseClientStore
 
 
@@ -29,7 +29,7 @@ class ClientManager:
         if ping is not None:
             client.ping = ping
 
-        client.last_update = datetime.now(timezone.utc)
+        client.last_update = datetime.now(timezone.utc).isoformat()
         self.store.register(client_id, client)
         return client
 
@@ -42,7 +42,7 @@ class ClientManager:
         if not clients:
             return None
 
-        return sorted(clients, key=lambda client: client.ping or 9999, reverse=True)[0]
+        return sorted(clients, key=lambda client: client.ping or 9999)[0]
 
     def remove_client(self, client_id: str) -> Optional[Client]:
         return self.store.delete(client_id)
