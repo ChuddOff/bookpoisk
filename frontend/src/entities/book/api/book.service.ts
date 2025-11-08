@@ -56,6 +56,13 @@ export class BookService {
       .then((res) => res.data);
   }
 
+  async postBooksForMe() {
+    const res = await httpAuth
+      .post<BookDto[]>(ENDPOINT.bookForMe)
+      .then((res) => res.data);
+    return res;
+  }
+
   genres() {
     return http.get<GenresDto>(ENDPOINT.genres).then((res) => res.data);
   }
