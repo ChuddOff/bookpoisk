@@ -334,23 +334,22 @@ function MultiSelect({
 
             {/* Footer: фиксируется поверх, всегда видно */}
             <div
-              className="absolute left-0 right-0 bottom-0 z-[90] border-t bg-white p-6 cursor-pointer"
+              className="fixed left-0 right-0 z-[90] border-t bg-white"
               style={{
+                bottom: 0,
+                padding: "16px 24px",
+                paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + 16px)`, // учёт безопасного отступа
                 boxShadow: "0 -6px 18px rgba(17,20,24,0.06)",
               }}
               onClick={() => {
-                // при наличии onApply — вызываем его с локальным списком
                 if (typeof onApply === "function") {
                   onApply(localSelected);
                 } else {
-                  // бэкапный вариант: если onApply не передан — эмулируем поведение старого API:
-                  // сначала очищаем, затем поочередно вызываем onToggle для всех выбранных (это небезопасно в некоторых случаях,
-                  // но служит как fallback)
                   onClear?.();
-                  // дать небольшой таймаут, чтобы parent успел применить clear (можно убрать, если у тебя onChange синхронный)
-                  setTimeout(() => {
-                    localSelected.forEach((v) => onToggle?.(v));
-                  }, 0);
+                  setTimeout(
+                    () => localSelected.forEach((v) => onToggle?.(v)),
+                    0
+                  );
                 }
                 setOpen(false);
               }}
