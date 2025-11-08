@@ -26,7 +26,7 @@ export interface OkResponseDto {
 }
 
 export type GenresDto =
-  | Array<BookEntity["genre"]>
+  | Array<BookEntity["genres"]>
   | {
-      data: Array<BookEntity["genre"]>;
+      data: Array<BookEntity["genres"]>;
     };
