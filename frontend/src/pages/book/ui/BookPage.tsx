@@ -51,10 +51,10 @@ export function BookPage() {
   }
 
   const book = resp;
-  const genres = Array.isArray(book.genre)
-    ? book.genre
-    : book.genre
-    ? [book.genre]
+  const genres = Array.isArray(book.genres)
+    ? book.genres
+    : book.genres
+    ? [book.genres]
     : [];
   const cover = book.cover || book.photos?.[0] || "";
 
@@ -153,14 +153,15 @@ export function BookPage() {
       </div>
 
       {/* Похожие по первому жанру */}
-      {genres[0] && (
+      {genres.map((g) => (
         <SectionFeed
-          title={`Похожие в жанре «${genres[0]}»`}
-          params={{ page: 1, per_page: 10, genres: [genres[0]] }}
-          moreHref={`/catalog?genres=${encodeURIComponent(genres[0])}`}
+          key={g}
+          title={`Похожие в жанре «${g}»`}
+          params={{ page: 1, per_page: 10, genres: [g] }}
+          moreHref={`/catalog?genres=${encodeURIComponent(g)}`}
           className="mt-3"
         />
-      )}
+      ))}
 
       {/* Лайтбокс */}
       {cover && (

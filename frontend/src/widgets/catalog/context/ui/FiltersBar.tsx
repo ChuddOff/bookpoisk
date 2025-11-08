@@ -9,6 +9,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  Dialog,
+  DialogContent,
+  DialogOverlay,
   Input,
   Popover,
   PopoverContent,
@@ -16,6 +19,9 @@ import {
   cn,
 } from "@/shared/ui";
 import { useBookGenres } from "@/entities/book";
+import { useIsMobile } from "@/shared/lib/useIsMobile";
+import { useDebouncedValue } from "@/shared/lib/hooks/useDebouncedValue";
+import { ScrollArea } from "@/shared/ui/scroll-area";
 
 // те же наборы опций, что в контексте
 const YEARS = [
@@ -47,6 +53,8 @@ type Props = {
   className?: string;
 };
 
+type Option = { label: string; value: string };
+
 /** Мультиселект с чекбоксами (для жанров). */
 function MultiSelect({
   title,
@@ -56,59 +64,305 @@ function MultiSelect({
   onToggle,
   onClear,
   className,
+  maxRender = 200,
+  onApply,
 }: {
   title: string;
-  placeholder: string;
-  options: { label: string; value: string }[];
+  placeholder?: string;
+  options: Option[];
   values?: string[];
   onToggle: (v: string) => void;
   onClear?: () => void;
   className?: string;
+  maxRender?: number;
+  onApply?: (vals: string[]) => void;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
-  const count = values?.length ?? 0;
 
+  // локальный поисковый стейт + дебаунс
+  const [search, setSearch] = React.useState("");
+  const debouncedSearch = useDebouncedValue(search, 180); // 180ms — плавно и быстро
+
+  // мемоизированная фильтрация (без учёта регистра)
+  const filtered = React.useMemo(() => {
+    if (!debouncedSearch) return options;
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => {
+      // простая проверка: label включает query или value включает
+      return (
+        (o.label && o.label.toLowerCase().includes(q)) ||
+        (o.value && o.value.toLowerCase().includes(q))
+      );
+    });
+  }, [options, debouncedSearch]);
+
+  // переключатель "показать всё", чтобы при очень большом количестве не рендерить всё по умолчанию
+  const [showAll, setShowAll] = React.useState(false);
+  React.useEffect(() => {
+    // при каждом открытии сбрасываем локальные контролы (можешь изменить)
+    if (!open) {
+      setSearch("");
+      setShowAll(false);
+    }
+  }, [open]);
+
+  const count = values?.length ?? 0;
+  const totalFound = filtered.length;
+  const shown = showAll ? filtered : filtered.slice(0, maxRender);
+  const needTruncate = filtered.length > maxRender;
+
+  // оптимизация: мемоизируем линию элементов, чтобы не перегружать виртуальные рендеры
+  const list = React.useMemo(
+    () =>
+      shown.map((o) => {
+        const checked = values.includes(o.value);
+        return (
+          <CommandItem
+            key={o.value}
+            onSelect={() => onToggle(o.value)}
+            className="flex items-center gap-2"
+          >
+            <Checkbox className="mr-2" checked={checked} />
+            <div className="truncate">{o.label}</div>
+            {checked ? (
+              <Check className="ml-auto h-4 w-4 text-emerald-600" />
+            ) : null}
+          </CommandItem>
+        );
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shown, values] // onToggle не включаю нарочно, чтобы не ломать referential equality; если линтер ругается — добавь
+  );
+
+  const [localSelected, setLocalSelected] = React.useState<string[]>(
+    values ?? []
+  );
+
+  // при открытии диалога синхронизируем локальный стейт с пропом values
+  React.useEffect(() => {
+    if (open) {
+      setLocalSelected(Array.isArray(values) ? [...values] : []);
+    }
+  }, [open]);
+
+  // focus control: на десктопе можно фокусировать CommandInput по-умолчанию.
+  // на мобилке удобнее автофокус в Dialog (DialogContent -> Input autoFocus).
+  if (!isMobile) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={className}>
+            {title}
+            {count ? ` · ${count}` : ""}
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent side="bottom" align="start" className="p-0 w-80">
+          <div className="flex items-center justify-between px-3 py-2 border-b">
+            <div className="text-sm font-medium">{title}</div>
+            {count > 0 && (
+              <button
+                onClick={() => onClear?.()}
+                className="text-xs text-slate-500 hover:text-ink inline-flex items-center gap-1"
+              >
+                <X className="h-3 w-3" /> Сбросить
+              </button>
+            )}
+          </div>
+
+          <div className="p-2">
+            {/* CommandInput поддерживает controlled интерфейс в shadcn -> onValueChange/value */}
+            <Command>
+              <CommandInput
+                placeholder={placeholder}
+                value={search}
+                onValueChange={(v: string) => setSearch(v)}
+                // чтобы избежать лишних scrollIntoView в CommandInput,
+                // можно отключить autofocus — но оставим поведение по умолчанию
+              />
+              <CommandList>
+                <CommandGroup>{list}</CommandGroup>
+              </CommandList>
+            </Command>
+
+            {needTruncate && (
+              <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                <div>
+                  Показано{" "}
+                  {showAll ? totalFound : Math.min(maxRender, totalFound)} из{" "}
+                  {totalFound}
+                </div>
+                <button
+                  className="cursor-pointer"
+                  onClick={() => setShowAll((s) => !s)}
+                >
+                  {showAll ? "Свернуть" : "Показать всё"}
+                </button>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // --- МОБИЛКА: full-screen Dialog c обычным Input (устойчивее при клавиатуре)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className={className}>
-          {title}
-          {count ? ` · ${count}` : ""}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-72">
-        <div className="flex items-center justify-between px-3 py-2 border-b">
-          <div className="text-sm font-medium">{title}</div>
-          {count > 0 && (
-            <button
-              onClick={() => onClear?.()}
-              className="text-xs text-slate-500 hover:text-ink inline-flex items-center gap-1"
-            >
-              <X className="h-3 w-3" /> Сбросить
-            </button>
+    <>
+      <Button
+        variant="outline"
+        className={className}
+        onClick={() => setOpen(true)}
+      >
+        {title}
+        {values?.length ? ` · ${values.length}` : ""}
+        {totalFound ? (
+          <span className="ml-2 text-xs text-slate-500">({totalFound})</span>
+        ) : null}
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogOverlay className="fixed inset-0 z-[79] bg-black/30" />
+
+        {/* DialogContent — full-screen, высота через --vh */}
+        <DialogContent
+          hideClose
+          style={{
+            height: "calc(var(--vh, 1vh) * 100)",
+          }}
+          className={cn(
+            "fixed left-0 top-0 z-[80] m-0 w-full max-w-none rounded-none border-0 p-0",
+            "translate-x-0 translate-y-0 !animate-none"
           )}
-        </div>
-        <Command>
-          <CommandInput placeholder={placeholder} />
-          <CommandList>
-            <CommandGroup>
-              {options.map((o) => {
-                const checked = values?.includes(o.value) ?? false;
-                return (
-                  <CommandItem key={o.value} onSelect={() => onToggle(o.value)}>
-                    <Checkbox className="mr-2" checked={checked} />
-                    {o.label}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+        >
+          <div className="flex h-full flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-2 border-b p-3">
+              <div className="text-sm font-medium">{title}</div>
+              {values && values.length > 0 ? (
+                <button
+                  onClick={() => onClear?.()}
+                  className="text-xs text-slate-500 hover:text-ink inline-flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" /> Сбросить
+                </button>
+              ) : null}
+            </div>
+
+            {/* truncate info */}
+            {needTruncate && (
+              <div className="mt-3 flex items-center justify-between text-sm text-slate-500 px-3">
+                <div>
+                  Показано{" "}
+                  {showAll ? totalFound : Math.min(maxRender, totalFound)} из{" "}
+                  {totalFound}
+                </div>
+                <button className="" onClick={() => setShowAll((s) => !s)}>
+                  {showAll ? "Свернуть" : "Показать всё"}
+                </button>
+              </div>
+            )}
+
+            {/* INPUT */}
+            <div className="px-3 pt-3 pb-2">
+              <Input
+                autoFocus
+                placeholder={placeholder}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* SCROLL AREA: занимает оставшуюся высоту минус footer.
+                Внутри мы добавили pb равный FOOTER_HEIGHT, чтобы содержимое не перекрывалось фикс- футером. */}
+            <div
+              className="flex-1 px-3 pb-0"
+              style={{ minHeight: 0 /* важно для flex overflow */ }}
+            >
+              {/* Если у тебя есть ScrollArea в shared/ui — используем его */}
+              {/* ScrollArea должен занимать всю площадь, внутри — список */}
+              <ScrollArea
+                style={{ height: "calc(100vh - 73px - 60px - 46px - 40px)" }}
+                className="w-full"
+              >
+                <div className="flex flex-col gap-2 pt-1">
+                  {shown.length === 0 ? (
+                    <div className="p-2 text-sm text-slate-600">
+                      Ничего не найдено.
+                    </div>
+                  ) : (
+                    shown.map((o) => {
+                      const checked = localSelected.includes(o.value);
+                      return (
+                        <button
+                          key={o.value}
+                          onClick={() => {
+                            setLocalSelected((prev) =>
+                              prev.includes(o.value)
+                                ? prev.filter((x) => x !== o.value)
+                                : [...prev, o.value]
+                            );
+                          }}
+                          className="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 hover:bg-soft"
+                          type="button"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Checkbox checked={checked} />
+                            <div className="truncate">{o.label}</div>
+                          </div>
+                          {checked ? (
+                            <Check className="h-4 w-4 text-emerald-600" />
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* ------------- Если у тебя НЕТ ScrollArea:
+                  замени блок <ScrollArea>...</ScrollArea> на:
+                <div className="h-full overflow-y-auto pb-[90px] -webkit-overflow-scrolling-touch">
+                  ...тот же контент...
+                </div>
+                 и удали импорты ScrollArea.
+              ------------- */}
+            </div>
+
+            {/* Footer: фиксируется поверх, всегда видно */}
+            <div
+              className="absolute left-0 right-0 bottom-0 z-[90] border-t bg-white p-6 cursor-pointer"
+              style={{
+                boxShadow: "0 -6px 18px rgba(17,20,24,0.06)",
+              }}
+              onClick={() => {
+                // при наличии onApply — вызываем его с локальным списком
+                if (typeof onApply === "function") {
+                  onApply(localSelected);
+                } else {
+                  // бэкапный вариант: если onApply не передан — эмулируем поведение старого API:
+                  // сначала очищаем, затем поочередно вызываем onToggle для всех выбранных (это небезопасно в некоторых случаях,
+                  // но служит как fallback)
+                  onClear?.();
+                  // дать небольшой таймаут, чтобы parent успел применить clear (можно убрать, если у тебя onChange синхронный)
+                  setTimeout(() => {
+                    localSelected.forEach((v) => onToggle?.(v));
+                  }, 0);
+                }
+                setOpen(false);
+              }}
+            >
+              <p className="text-[16px] select-none text-center">Готово</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
-
 /** Одиночный селект (поиск + чек-иконка), повторяет паттерн shadcn Command */
 function SingleSelect({
   title,
@@ -238,6 +492,7 @@ export function FiltersBar({
                 : [...(genres ?? []), v],
             })
           }
+          onApply={(vals: string[]) => onChange({ genres: vals })}
           onClear={() => onChange({ genres: [] })}
           className="max-xs:flex-1"
         />
