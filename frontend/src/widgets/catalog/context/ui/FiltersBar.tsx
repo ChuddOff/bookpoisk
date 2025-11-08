@@ -229,13 +229,8 @@ function MultiSelect({
         {/* DialogContent — full-screen, высота через --vh */}
         <DialogContent
           hideClose
-          style={{
-            height: "calc(var(--vh, 1vh) * 100)",
-          }}
-          className={cn(
-            "fixed left-0 top-0 z-[80] m-0 w-full max-w-none rounded-none border-0 p-0",
-            "translate-x-0 translate-y-0 !animate-none"
-          )}
+          style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+          className="fixed left-0 top-0 z-[80] m-0 w-full max-w-none rounded-none border-0 p-0 translate-x-0 translate-y-0 !animate-none"
         >
           <div className="flex h-full flex-col">
             {/* Header */}
