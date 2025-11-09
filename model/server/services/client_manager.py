@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 from typing import Optional, List
 
 from model.server.models import Client
-from model.server.services import BaseClientStore
 
 
 class ClientManager:
+    from model.server.services import BaseClientStore
+
     def __init__(self, store: BaseClientStore):
         self.store = store
 
