@@ -8,6 +8,7 @@ load_dotenv()
 
 # CLIENTS SETTINGS #
 API_KEY = os.getenv("API_KEY")
+SERVER_URL = os.getenv("SERVER_URL")
 
 # MODEL SETTINGS #
 model_client = OpenAI(base_url=os.getenv("MODEL_URL"), api_key=os.getenv("MODEL_KEY"))
