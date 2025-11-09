@@ -3,7 +3,7 @@ from typing import Generator
 
 import psycopg2
 
-from server.utils import retry
+from ..utils import retry
 
 
 

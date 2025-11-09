@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from server.models import GenerationRequest
+from ..models import GenerationRequest
 
 
 class Task(BaseModel):
