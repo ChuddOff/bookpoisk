@@ -1,18 +1,31 @@
+import os
+
 import httpx
+from dotenv import load_dotenv
 from fastapi import APIRouter
+from fastapi.responses import Response
 from fastapi.params import Depends
 from starlette.responses import JSONResponse
 
-from server.core import verify_api_key, task_manager, BACKEND_URL
+from server.core import verify_api_key, task_manager, BACKEND_URL, client_manager
 from server.models import GenerationRequest, GenerationResultRequest
+
+load_dotenv()
 
 generate_router = APIRouter(prefix="/generate", tags=["Generation"])
 
 
 @generate_router.post("/", status_code=201)
-async def generate(req: GenerationRequest) -> JSONResponse:
+async def generate(req: GenerationRequest) -> Response:
+    client = client_manager.get_best_client()
     task_loc = task_manager.create(req)
-    return JSONResponse(status_code=201, content={"task": task_loc.model_dump()})
+
+    if len(client_manager.get_all_clients()) < 1:
+        return Response(status_code=404, content={"error": "No clients found"})
+
+    async with httpx.AsyncClient() as c:
+        resp = await c.post(f"{client.address}/generate/", json=task_loc.model_dump(), headers={"x-api-key": os.getenv("CLIENT_SECRET")})
+        return Response(status_code=201, content=resp.content)
 
 @generate_router.get("/status", status_code=200)
 async def status(task_id: str) -> JSONResponse:
