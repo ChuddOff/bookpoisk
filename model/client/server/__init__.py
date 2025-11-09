@@ -1,0 +1,1 @@
+from .app import register, ping_server

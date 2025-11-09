@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Optional, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from server.models import GenerationRequest
+from client.models import GenerationRequest
 
 
 class Task(BaseModel):

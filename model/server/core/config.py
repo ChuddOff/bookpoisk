@@ -18,6 +18,6 @@ DB_CONFIG = {
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 store = MemoryClientStore()
-manager = ClientManager(store)
+client_manager = ClientManager(store)
 task_manager = TaskManager()
 pool = SimpleConnectionPool(1, 10, **DB_CONFIG)

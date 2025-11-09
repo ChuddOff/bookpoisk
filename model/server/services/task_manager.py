@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from server.models import Task, GenerationRequest
@@ -9,7 +10,7 @@ class TaskManager:
         self.tasks: dict[str, Task] = {}
 
     def create(self, req: GenerationRequest) -> Task:
-        t = Task(task_id=str(uuid.uuid4()))
+        t = Task(task_id=str(uuid.uuid4()), request=req)
         self.tasks[t.task_id] = t
         return t
 
@@ -24,6 +25,7 @@ class TaskManager:
 
         task.result = result
         task.status = "done"
+        task.completed_at = datetime.now(timezone.utc).isoformat()
         return True
 
     def all(self) -> list[dict]:
