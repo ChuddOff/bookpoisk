@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from client.routes import generate_router
 from client.server import register, ping_server
-from server.core.config import SERVER_URL
+from client.core import SERVER_URL
 
 app = FastAPI(title="Client", debug=True)
 

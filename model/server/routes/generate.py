@@ -2,7 +2,7 @@ import os
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from fastapi.params import Depends
 from starlette.responses import JSONResponse
@@ -21,7 +21,7 @@ async def generate(req: GenerationRequest) -> Response:
     task_loc = task_manager.create(req)
 
     if len(client_manager.get_all_clients()) < 1:
-        return Response(status_code=404, content={"error": "No clients found"})
+        raise HTTPException(status_code=404, detail="No clients found")
 
     async with httpx.AsyncClient() as c:
         resp = await c.post(f"{client.address}/generate/", json=task_loc.model_dump(), headers={"x-api-key": os.getenv("CLIENT_SECRET")})
