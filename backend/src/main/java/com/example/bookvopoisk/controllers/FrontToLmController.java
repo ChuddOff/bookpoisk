@@ -27,7 +27,7 @@ public class FrontToLmController {
   private String webhookSecret;
 
   /** Шаг 1: фронт вызывает — мы запускаем генерацию у LM и возвращаем requestId */
-  @PostMapping("/booksForMe")
+  @PostMapping("/bookForMe")
   public ResponseEntity<Map<String, Object>> startBooksForMe(
     @RequestHeader(name = "Authorization", required = false) String authHdr,
     Authentication auth
