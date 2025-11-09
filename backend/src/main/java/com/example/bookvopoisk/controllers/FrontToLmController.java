@@ -23,7 +23,7 @@ public class FrontToLmController {
   private final RecommendationStore store;
   private final JwtUtil jwtUtil;
 
-  @Value("${lm.webhook-secret}")
+  @Value("${lm.webhook-secret:}")
   private String webhookSecret;
 
   /** Шаг 1: фронт вызывает — мы запускаем генерацию у LM и возвращаем requestId */
