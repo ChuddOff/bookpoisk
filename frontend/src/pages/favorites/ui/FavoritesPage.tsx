@@ -60,7 +60,7 @@ export function FavoritesPage() {
           {items.map((b) => (
             // Оборачиваем BookRowCard в блок, чтобы карточка растягивалась по ширине колонки
             <div key={b.id} className="w-full">
-              <BookRowCard book={b} />
+              <BookRowCard book={b} showX />
             </div>
           ))}
         </div>
