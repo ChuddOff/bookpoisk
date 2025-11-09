@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from ..models import Client
-from .client_store import BaseClientStore
+from model.server.models import Client
+from model.server.services import BaseClientStore
 
 
 class ClientManager:

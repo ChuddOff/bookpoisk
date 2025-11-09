@@ -2,8 +2,8 @@ from fastapi import APIRouter
 from fastapi.params import Depends
 from starlette.responses import JSONResponse
 
-from ..core import client_manager, verify_api_key
-from ..models import ClientRegisterRequest, ClientPingRequest
+from model.server.core import client_manager, verify_api_key
+from model.server.models import ClientRegisterRequest, ClientPingRequest
 
 client_router = APIRouter(prefix="/clients", tags=["Client management"])
 

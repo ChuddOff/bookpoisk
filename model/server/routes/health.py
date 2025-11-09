@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
-from ..core import client_manager
+from model.server.core import client_manager
 
 health_router = APIRouter(prefix="/health", tags=["Server status"])
 start_time = datetime.now()
