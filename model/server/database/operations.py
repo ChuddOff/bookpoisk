@@ -1,4 +1,4 @@
-from server.models import Book
+from ..models import Book
 
 
 def book_exists_in_db(book: Book) -> bool:

@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from psycopg2.pool import SimpleConnectionPool
 
-from server.services import ClientManager, TaskManager, MemoryClientStore, RedisClientStore
+from ..services import ClientManager, TaskManager, MemoryClientStore, RedisClientStore
 
 load_dotenv()
 

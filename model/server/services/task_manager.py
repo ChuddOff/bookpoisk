@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from server.models import Task, GenerationRequest
+from ..models import Task, GenerationRequest
 
 
 class TaskManager:
