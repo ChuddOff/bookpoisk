@@ -26,14 +26,19 @@ public class LmPushService {
     this.ingestPath = ingestPath;
   }
 
-  public List<FavouriteBookDto> callFavoritesAsDtos(UUID userId, List<FavouriteBookDto> books) {
-    var payload = Map.of("userId", userId, "books", books);
+  public void requestAsync(UUID userId, List<FavouriteBookDto> favorites, String callbackUrl, UUID requestId) {
+    var payload = Map.of(
+      "userId", userId,
+      "books", favorites,
+      "callbackUrl", callbackUrl,
+      "requestId", requestId.toString()
+    );
 
-    return restClient.post()
+    restClient.post()
       .uri(ingestPath)
       .contentType(MediaType.APPLICATION_JSON)
       .body(payload)
       .retrieve()
-      .body(new ParameterizedTypeReference<List<FavouriteBookDto>>() {});
+      .toBodilessEntity(); // LM сам потом позовёт коллбэк
   }
 }
