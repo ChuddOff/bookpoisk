@@ -1,5 +1,5 @@
-from ..database import book_exists_in_db
-from ..models import Book
+from model.server.database import book_exists_in_db
+from model.server.models import Book
 
 
 def validate_answer(answer: str) -> bool:

@@ -1,5 +1,10 @@
+import os
+import sys
+
 import uvicorn
 from fastapi import FastAPI
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from routes import client_router, generate_router, health_router
 

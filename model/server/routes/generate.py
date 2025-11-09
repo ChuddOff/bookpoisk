@@ -7,8 +7,8 @@ from fastapi.responses import Response
 from fastapi.params import Depends
 from starlette.responses import JSONResponse
 
-from ..core import verify_api_key, task_manager, BACKEND_URL, client_manager
-from ..models import GenerationRequest, GenerationResultRequest
+from model.server.core import verify_api_key, task_manager, BACKEND_URL, client_manager
+from model.server.models import GenerationRequest, GenerationResultRequest
 
 load_dotenv()
 

@@ -4,7 +4,7 @@ from typing import Optional, List, Dict
 
 import redis
 
-from ..models import Client
+from model.server.models import Client
 
 
 class BaseClientStore:

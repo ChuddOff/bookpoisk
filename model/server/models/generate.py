@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
-from .book import Book
+from model.server.models import Book
 
 class GenerationRequest(BaseModel):
     books: List[Book]
