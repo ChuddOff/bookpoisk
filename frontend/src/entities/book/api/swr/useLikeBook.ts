@@ -1,15 +1,13 @@
-import useSWRMutation from "swr/mutation";
-import type { Key } from "swr";
-import { bookService } from "../book.service";
+// src/features/favorites/api/useLikeBook.ts
 
-// Мутация лайка: вызывать trigger(id)
-export function useLikeBook() {
-  const key: Key = ["likeBook"]; // тип ключа — из swr
-  return useSWRMutation(
-    key,
-    // ✅ Явно типизируем параметры, чтобы не было implicit any
-    async (_key: Key, { arg }: { arg: string }) => {
-      return bookService.like(arg);
-    }
-  );
+import { bookService } from "@/entities/book"; // твой инстанс сервиса
+
+/**
+ * Возвращает обычную функцию (id) => Promise<void>,
+ * чтобы в UI можно было делать: const like = useLikeBook(); await like(id)
+ */
+export function useLikeBook(): (id: string) => Promise<void> {
+  return async (bookId: string) => {
+    await bookService.like(bookId);
+  };
 }

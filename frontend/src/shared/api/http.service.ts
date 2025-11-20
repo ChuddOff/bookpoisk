@@ -1,82 +1,117 @@
-// src/shared/api/http.service.ts
-import { env } from "@/shared/config/env";
-import { toQueryString, type Query } from "@/shared/lib/query";
+// src/features/auth/auth.service.ts
+import { httpAuth } from "./axios";
+import {
+  getRefreshToken,
+  removeFromStorage,
+  saveTokenStorage,
+} from "../auth/session";
+import { ENDPOINT } from "../config/endpoints";
+import axios from "axios";
+import { useSWRConfig } from "swr";
+import { useNavigate } from "react-router-dom";
+import { useMe } from "@/entities/user";
 
-export class HttpError extends Error {
-  status: number;
-  payload?: unknown;
-  constructor(status: number, message: string, payload?: unknown) {
-    super(message);
-    this.status = status;
-    this.payload = payload;
-  }
-}
+export class AuthService {
+  /**
+   * Регистрация
+   * @method POST
+   * @param url
+   * @returns SignupEntity
+   * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
+   */
 
-export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /**
+   * Обновление Access Token
+   * Вызывается interceptors при ошибке 401 (и вручную при необходимости).
+   * @method GET
+   * @returns LoginEntity
+   * Приходит токен, он же записывается в cookie/storage через saveTokenStorage
+   */
+  async refresh() {
+    const refreshToken = getRefreshToken();
 
-export class ApiService {
-  // ⬇️ объявляем поле отдельно (это стирается на этапе типов)
-  private readonly baseUrl: string;
+    if (!refreshToken) {
+      return;
+    }
 
-  constructor(baseUrl: string) {
-    // ⬇️ явное присваивание вместо параметр-свойства
-    this.baseUrl = baseUrl;
-  }
-
-  async request<T>(
-    path: string,
-    options: {
-      method?: HttpMethod;
-      query?: Query;
-      body?: unknown;
-      headers?: Record<string, string>;
-    } = {}
-  ): Promise<T> {
-    const { method = "GET", query, body, headers } = options;
-    const url = this.baseUrl + path + toQueryString(query);
-
-    const res = await fetch(url, {
-      method,
+    const client = axios.create({
+      baseURL: import.meta.env.VITE_API_URL as string, // тот же BASE_URL, что в src/shared/api/axios.ts
+      withCredentials: false, // у тебя в axios.ts стоит withCredentials: false для Bearer-only
       headers: {
-        ...(body ? { "Content-Type": "application/json" } : {}),
-        ...headers,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        // ставим refresh в Authorization — как ожидает бэкенд
+        Authorization: `Bearer ${refreshToken}`,
       },
-      credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
     });
+    const res = await client.post(ENDPOINT.auth.refresh, undefined);
 
-    const text = await res.text();
-    let data: unknown = undefined;
+    // Приводим к ожидаемой форме: bэк может вернуть { accessToken } или { access }
+    const data = (res && (res.data ?? {})) as any;
+    const access = data.accessToken ?? data.access ?? data.access_token ?? null;
+
+    if (!access) {
+      // Если ответ неожиданный — считаем это ошибкой
+      throw new Error("REFRESH_FAILED_NO_ACCESS");
+    }
+
+    // Сохраняем новый access (функция сохраняет в localStorage, как ты просил)
     try {
-      data = text ? JSON.parse(text) : undefined;
+      saveTokenStorage(access);
     } catch {
       /* noop */
     }
 
-    if (!res.ok) {
-      const message =
-        (data as any)?.message ?? res.statusText ?? "Request failed";
-      throw new HttpError(res.status, message, data);
-    }
-    return data as T;
+    // Возвращаем весь ответ axios (чтобы caller мог получить data и т.п.)
+    return res;
   }
 
-  get<T>(path: string, query?: Query) {
-    return this.request<T>(path, { method: "GET", query });
+  /**
+   * Логаут
+   * @method GET
+   * Только авторизованный пользователь может отправить.
+   * Очищаем локальное хранилище токенов.
+   */
+  async logout() {
+    const { mutate: mutateCache } = useSWRConfig();
+    const { mutate: mutateMe } = useMe();
+    const nav = useNavigate();
+    removeFromStorage();
+    mutateMe();
+    mutateCache(() => true, undefined, { revalidate: false });
+    nav("/");
   }
-  post<T>(path: string, body?: unknown, query?: Query) {
-    return this.request<T>(path, { method: "POST", body, query });
-  }
-  put<T>(path: string, body?: unknown, query?: Query) {
-    return this.request<T>(path, { method: "PUT", body, query });
-  }
-  patch<T>(path: string, body?: unknown, query?: Query) {
-    return this.request<T>(path, { method: "PATCH", body, query });
-  }
-  del<T>(path: string, query?: Query) {
-    return this.request<T>(path, { method: "DELETE", query });
+  async acceptOAuth(accessToken: string) {
+    if (!accessToken) throw new Error("No access token provided");
+
+    // Сохраняем токен (cookie согласно твоей реализации saveTokenStorage)
+    try {
+      saveTokenStorage(accessToken);
+    } catch (e) {
+      console.warn("saveTokenStorage failed", e);
+    }
+
+    // Устанавливаем дефолтный заголовок для httpAuth
+    try {
+      httpAuth.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${accessToken}`;
+    } catch (e) {
+      console.warn("set default Authorization failed", e);
+    }
+
+    // Опционально: сразу получить профиль /auth/info, чтобы инициализировать сессию
+    try {
+      const profile = await httpAuth
+        .get("/auth/refresh")
+        .then((r) => r.data)
+        .catch(() => null);
+      return { token: accessToken, profile };
+    } catch (e) {
+      // не критично, вернём минимум
+      return { token: accessToken, profile: null };
+    }
   }
 }
 
-// единый инстанс
-export const apiService = new ApiService(env.API_URL);
+export const authService = new AuthService();

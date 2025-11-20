@@ -1,14 +1,10 @@
-import { apiService, type ApiService } from "@/shared/api/http.service";
 import { ENDPOINT } from "@/shared/api/endpoints";
-import type { User } from "../model/types";
+import type { User } from "@/entities/user";
+import { httpAuth } from "@/shared/api/axios";
 
 export class UserService {
-  private readonly api: ApiService;
-  constructor(api: ApiService = apiService) {
-    this.api = api;
-  }
   me() {
-    return this.api.get<User>(ENDPOINT.user);
+    return httpAuth.get<User>(ENDPOINT.user).then((res) => res.data);
   }
 }
 
