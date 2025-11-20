@@ -2,9 +2,10 @@ import axios from "axios";
 import type {
   AxiosError,
   AxiosInstance,
-  AxiosRequestConfig,
   AxiosResponse,
   CreateAxiosDefaults,
+  InternalAxiosRequestConfig,
+  AxiosRequestHeaders,
 } from "axios";
 import Constants from "expo-constants";
 import {
@@ -49,7 +50,7 @@ export async function loadPersistedTokens() {
 const httpAuth: AxiosInstance = axios.create(config);
 export const http = httpAuth;
 
-httpAuth.interceptors.request.use((cfg) => {
+httpAuth.interceptors.request.use((cfg: InternalAxiosRequestConfig) => {
   if (accessToken) {
     cfg.headers = cfg.headers ?? {};
     cfg.headers["Authorization"] = `Bearer ${accessToken}`;
@@ -64,10 +65,21 @@ async function refreshAccess() {
   const resp = await client.post(ENDPOINT.auth.refresh, undefined, {
     headers: { Authorization: `Bearer ${refresh}` },
   });
-  const data: any = resp.data ?? {};
-  const newAccess: string | null = data.access ?? data.accessToken ?? null;
+  const data: Partial<
+    Record<"access" | "accessToken" | "refresh" | "refreshToken", unknown>
+  > = resp.data ?? {};
+  const newAccess: string | null =
+    typeof data.access === "string"
+      ? data.access
+      : typeof data.accessToken === "string"
+        ? data.accessToken
+        : null;
   const newRefresh: string | null =
-    data.refresh ?? data.refreshToken ?? refresh;
+    typeof data.refresh === "string"
+      ? data.refresh
+      : typeof data.refreshToken === "string"
+        ? data.refreshToken
+        : refresh;
   if (!newAccess) throw new Error("REFRESH_FAILED");
   accessToken = newAccess;
   refreshToken = newRefresh;
@@ -88,10 +100,12 @@ function flush(newToken: string) {
 }
 
 httpAuth.interceptors.response.use(
-  (res) => res,
+  (res: AxiosResponse) => res,
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const original = error.config as any;
+    const original = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     if (status !== 401 || !original || original._retry) {
       return Promise.reject(error);
@@ -105,7 +119,7 @@ httpAuth.interceptors.response.use(
             original.headers = {
               ...(original.headers ?? {}),
               Authorization: `Bearer ${token}`,
-            };
+            } as AxiosRequestHeaders;
             resolve(httpAuth(original));
           } catch (e) {
             reject(e);
@@ -122,7 +136,7 @@ httpAuth.interceptors.response.use(
       original.headers = {
         ...(original.headers ?? {}),
         Authorization: `Bearer ${newAccess}`,
-      };
+      } as AxiosRequestHeaders;
       return httpAuth(original);
     } catch (err) {
       await clearTokens();
