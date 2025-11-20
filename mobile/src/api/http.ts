@@ -1,24 +1,41 @@
-import axios, { type AxiosError, type AxiosInstance, type CreateAxiosDefaults } from "axios";
+import axios from "axios";
+import type {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  CreateAxiosDefaults,
+} from "axios";
 import Constants from "expo-constants";
-import { getAccessToken as loadAccess, getRefreshToken as loadRefresh, saveTokens, clearTokens } from "@/storage/tokens";
+import {
+  getAccessToken as loadAccess,
+  getRefreshToken as loadRefresh,
+  saveTokens,
+  clearTokens,
+} from "@/storage/tokens";
 import { ENDPOINT } from "./endpoints";
 
 const BASE_URL =
-  Constants?.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+  Constants?.expoConfig?.extra?.apiUrl ??
+  process.env.EXPO_PUBLIC_API_URL ??
+  "http://localhost:3000";
 
 const config: CreateAxiosDefaults = {
   baseURL: BASE_URL,
   withCredentials: false,
   headers: {
     Accept: "application/json",
-    "Content-Type": "application/json"
-  }
+    "Content-Type": "application/json",
+  },
 };
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
-export function setAuthTokens(tokens: { access?: string | null; refresh?: string | null }) {
+export function setAuthTokens(tokens: {
+  access?: string | null;
+  refresh?: string | null;
+}) {
   accessToken = tokens.access ?? accessToken;
   refreshToken = tokens.refresh ?? refreshToken;
 }
@@ -45,11 +62,12 @@ async function refreshAccess() {
   if (!refresh) throw new Error("NO_REFRESH_TOKEN");
   const client = axios.create({ ...config, withCredentials: false });
   const resp = await client.post(ENDPOINT.auth.refresh, undefined, {
-    headers: { Authorization: `Bearer ${refresh}` }
+    headers: { Authorization: `Bearer ${refresh}` },
   });
   const data: any = resp.data ?? {};
   const newAccess: string | null = data.access ?? data.accessToken ?? null;
-  const newRefresh: string | null = data.refresh ?? data.refreshToken ?? refresh;
+  const newRefresh: string | null =
+    data.refresh ?? data.refreshToken ?? refresh;
   if (!newAccess) throw new Error("REFRESH_FAILED");
   accessToken = newAccess;
   refreshToken = newRefresh;
@@ -84,7 +102,10 @@ httpAuth.interceptors.response.use(
         enqueue((token) => {
           try {
             original._retry = true;
-            original.headers = { ...(original.headers ?? {}), Authorization: `Bearer ${token}` };
+            original.headers = {
+              ...(original.headers ?? {}),
+              Authorization: `Bearer ${token}`,
+            };
             resolve(httpAuth(original));
           } catch (e) {
             reject(e);
@@ -98,7 +119,10 @@ httpAuth.interceptors.response.use(
       const newAccess = await refreshAccess();
       flush(newAccess);
       original._retry = true;
-      original.headers = { ...(original.headers ?? {}), Authorization: `Bearer ${newAccess}` };
+      original.headers = {
+        ...(original.headers ?? {}),
+        Authorization: `Bearer ${newAccess}`,
+      };
       return httpAuth(original);
     } catch (err) {
       await clearTokens();
@@ -106,14 +130,17 @@ httpAuth.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export function getBaseUrl() {
   return BASE_URL;
 }
 
-export function setTokensFromAuth(access?: string | null, refresh?: string | null) {
+export function setTokensFromAuth(
+  access?: string | null,
+  refresh?: string | null,
+) {
   accessToken = access ?? null;
   refreshToken = refresh ?? null;
 }
