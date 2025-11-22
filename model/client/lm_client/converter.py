@@ -1,26 +1,21 @@
-from datetime import datetime
-import re
-
 from openai.types.chat import ChatCompletion
 
-from client.database import book_exists_in_db
 from client.models import GenerationResultRequest, Book
 
 
 def convert_answer(response: ChatCompletion, task_id: str) -> GenerationResultRequest:
-    answer = re.sub(r"<think>.*?</think>", "", response.choices[0].message.content, flags=re.DOTALL).strip()
+    from . import try_fix_json
 
-    books = [i.split(" - ") for i in answer[answer.find("books"):].split("\n")]
-    result = []
+    raw = response.choices[0].message.content
+    data = try_fix_json(raw)
+    books = []
 
-    for book in books:
-        title = book[0]
-        author = book[-1]
+    if not data:
+        raise ValueError("Model returned invalid response")
 
-        if not book_exists_in_db(title, author):
-            ...
+    for b in data["books"]:
+        if isinstance(b.get("author"), list):
+            b["author"] = ", ".join(b["author"])
+        books.append(Book(**b))
 
-        result.append(Book(title=title, author=author))
-
-    return GenerationResultRequest(task_id=task_id, result=result, generated_at=datetime.now().isoformat())
-
+    return GenerationResultRequest(task_id=task_id, result=books)

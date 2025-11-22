@@ -14,4 +14,9 @@ def fill_book_from_db(title: str, author: str):
 
     with get_cursor() as cursor:
         cursor.execute("SELECT id, title, author, year, description, genre, cover, pages FROM books WHERE title = %s AND author = %s", (title, author))
-        print(cursor.fetchone())
+        row = cursor.fetchone()
+
+        if not row:
+            return None
+
+        return Book(**dict(zip(["id", "title", "author", "year", "description", "genre", "cover", "pages"], row)))

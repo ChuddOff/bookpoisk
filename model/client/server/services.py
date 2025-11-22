@@ -1,20 +1,24 @@
-import socket
+import subprocess
 import time
 
+import requests
 import httpx
+
+from client.core import SERVER_URL, API_KEY
+from client.models import GenerationResultRequest
 
 
 def get_client_ip() -> str:
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(("8.8.8.8", 80))
-        ip = sock.getsockname()[0]
-        sock.close()
-        print(ip)
-        return ip
+        subprocess.Popen(["ngrok", "http", "9000"])
+        time.sleep(2)
+
+        url = "http://localhost:4040/api/tunnels"
+        tunnels = requests.get(url).json()["tunnels"]
+        return tunnels[0]["public_url"]
 
     except Exception:
-        return "127.0.0.1"
+        raise Exception("You need to turn on VPN service first")
 
 
 async def measure_ping(server_url: str) -> int:
@@ -28,3 +32,10 @@ async def measure_ping(server_url: str) -> int:
 
     except Exception:
         return -1
+
+
+def send_result(result: GenerationResultRequest) -> None:
+    url = f"{SERVER_URL}generate/result"
+    headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
+    requests.post(url, json=result.model_dump(), headers=headers, timeout=10)
+    print(result.model_dump())
