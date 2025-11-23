@@ -1,0 +1,10 @@
+openai~=2.7.1
+python-dotenv~=1.2.1
+psycopg2-binary~=2.9.11
+fastapi~=0.116.2
+uvicorn~=0.35.0
+pydantic~=2.12.3
+starlette~=0.48.0
+httpx~=0.28.1
+requests~=2.32.5
+redis~=7.0.1

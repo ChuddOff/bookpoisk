@@ -13,6 +13,9 @@ def get_db_connection() -> psycopg2.extensions.connection:
 
     connection = pool.getconn()
 
+    if connection is None:
+        raise RuntimeError("Unable to connect to database")
+
     with connection.cursor() as cursor:
         cursor.execute('SELECT 1')
 
@@ -24,21 +27,31 @@ def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
     from client.core import pool
 
     connection = get_db_connection()
-
-    if connection is None:
-        return None
+    cursor = None
 
     try:
         cursor = connection.cursor()
-
-        if cursor is None:
-            raise Exception()
-
         yield cursor
-        connection.commit()
 
     except Exception as e:
         connection.rollback()
+        raise
 
     finally:
+        try:
+            cursor.close()
+
+        except Exception as e:
+            pass
+
         pool.putconn(connection)
+
+
+def close_db_pool():
+    from client.core import pool
+
+    try:
+        pool.closeall()
+
+    except Exception as e:
+        raise e

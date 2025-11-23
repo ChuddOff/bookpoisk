@@ -1,26 +1,37 @@
-from datetime import datetime
-import re
-
 from openai.types.chat import ChatCompletion
 
-from client.database import book_exists_in_db
-from client.models import GenerationResultRequest, Book
+from client.database import fill_book_from_db
 
 
-def convert_answer(response: ChatCompletion, task_id: str) -> GenerationResultRequest:
-    answer = re.sub(r"<think>.*?</think>", "", response.choices[0].message.content, flags=re.DOTALL).strip()
+def convert_answer(response: ChatCompletion, unsuitable_books: list) -> list:
+    from . import try_fix_json, validate_book_entry
 
-    books = [i.split(" - ") for i in answer[answer.find("books"):].split("\n")]
-    result = []
+    raw = response.choices[0].message.content
+    data = try_fix_json(raw)
+    books = []
 
-    for book in books:
-        title = book[0]
-        author = book[-1]
+    if not data:
+        raise ValueError("Model returned invalid response")
 
-        if not book_exists_in_db(title, author):
-            ...
+    for b in data["books"]:
+        if isinstance(b.get("author"), list):
+            b["author"] = ", ".join(b["author"])
 
-        result.append(Book(title=title, author=author))
+        if isinstance(b.get("author"), str):
+            b["author"] = b["author"].strip()
 
-    return GenerationResultRequest(task_id=task_id, result=result, generated_at=datetime.now().isoformat())
+        if isinstance(b.get("title"), str):
+            b["title"] = b["title"].strip()
 
+        if not validate_book_entry(b):
+            continue
+
+        book = fill_book_from_db(**b)
+
+        if not book:
+            unsuitable_books.append(b)
+            continue
+
+        books.append(book)
+
+    return books
