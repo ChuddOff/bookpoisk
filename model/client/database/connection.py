@@ -27,11 +27,11 @@ def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
     from client.core import pool
 
     connection = get_db_connection()
+    cursor = None
 
     try:
         cursor = connection.cursor()
         yield cursor
-        connection.commit()
 
     except Exception as e:
         connection.rollback()
@@ -45,3 +45,13 @@ def get_cursor() -> Generator[psycopg2.extensions.cursor, None, None]:
             pass
 
         pool.putconn(connection)
+
+
+def close_db_pool():
+    from client.core import pool
+
+    try:
+        pool.closeall()
+
+    except Exception as e:
+        raise e

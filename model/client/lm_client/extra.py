@@ -10,5 +10,6 @@ def try_fix_json(text: str):
 
     try:
         return json.loads(text)
+
     except json.JSONDecodeError:
         return False

@@ -12,11 +12,16 @@ def book_exists_in_db(title: str, author: str) -> bool:
 def fill_book_from_db(title: str, author: str):
     from client.database import get_cursor
 
+    if not book_exists_in_db(title, author):
+        return None
+
     with get_cursor() as cursor:
-        cursor.execute("SELECT id, title, author, year, description, genre, cover, pages FROM books WHERE title = %s AND author = %s", (title, author))
+
+        cursor.execute("SELECT id, title, author, year, description, cover, pages FROM books "
+                       "WHERE title = %s AND author = %s LIMIT 1", (title, author))
         row = cursor.fetchone()
 
-        if not row:
-            return None
+        cursor.execute("SELECT genre FROM book_genres WHERE book_id = %s", (row[0],))
+        row = row + tuple([[r[0] for r in cursor.fetchall()]])
 
-        return Book(**dict(zip(["id", "title", "author", "year", "description", "genre", "cover", "pages"], row)))
+        return Book(**dict(zip(["id", "title", "author", "year", "description", "cover", "pages", "genre"], row)))

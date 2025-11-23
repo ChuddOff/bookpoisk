@@ -38,4 +38,3 @@ def send_result(result: GenerationResultRequest) -> None:
     url = f"{SERVER_URL}generate/result"
     headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
     requests.post(url, json=result.model_dump(), headers=headers, timeout=10)
-    print(result.model_dump())

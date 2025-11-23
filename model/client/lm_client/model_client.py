@@ -1,65 +1,81 @@
 import asyncio
-import subprocess
-import time
+import traceback
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
-
-import requests
+from typing import Optional, List, Dict
 
 from client.core import model_client, MODEL_NAME
 from client.lm_client import validate_answer, convert_answer
-from client.models import GenerationRequest, Task, GenerationResultRequest
+from client.models import GenerationRequest, Task
 from client.server import send_result
+from client.models import GenerationResultRequest
 
 model_lock = asyncio.Lock()
 
 
-def start_language_model() -> None:
-    try:
-        subprocess.run(["powershell", "-Command", "lms", "server", "start"], check=True, timeout=30)
-        time.sleep(5)
-
-        subprocess.run(["powershell", "-Command", "lms", "load", MODEL_NAME], check=True, timeout=120)
-
-    except Exception:
-        raise Exception("Failed to start language model")
-
-
-def ensure_language_model() -> Optional[bool]:
-    start = time.time()
-
-    while time.time() - start < 10:
-        try:
-            resp = requests.get("http://localhost:1234/v1/models", timeout=5)
-            if resp.status_code == 200:
-                return True
-
-        except Exception:
-            time.sleep(1)
-
-    return False
-
-
-def create_prompt(req: GenerationRequest) -> str:
+def create_prompt(req: GenerationRequest, unsuitable_books: Optional[List[Dict]] = None) -> str:
     with open(Path(__file__).resolve().parent / "prompts/basic_prompt.txt", "r", encoding="utf-8") as file:
-        basic_prompt = file.read()
+        prompt = file.read()
 
-    prompt = f"""Теперь обработай список этих книг:
-{"\n".join([i.title + " - " + i.author for i in req.books])}
-                 """
-    return basic_prompt + "\n" + prompt
+    if req.books:
+        prompt += "read_books:\n"
+        prompt += "\n".join([i.title + " - " + i.author for i in req.books])
+
+    if unsuitable_books:
+        prompt+= "\nunsuitable_books:\n"
+        prompt += "\n".join([f"{b.get('title')} - {b.get('author')}" for b in unsuitable_books])
+
+    return prompt
 
 
-async def model_generate(req: Task) -> GenerationResultRequest:
-    async with model_lock:
-        response = model_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": create_prompt(req.request)}],
-        )
+async def model_generate(req: Task):
+    unsuitable = []
+    res = []
 
-    if not validate_answer(response):
-        raise Exception("Failed to generate model")
+    for attempt in range(5):
+        print(unsuitable)
+        print(res)
+        try:
+            async with model_lock:
+                response = await asyncio.to_thread(_call_model_sync, req, unsuitable_books=unsuitable+[{"author": r.author, "title": r.title} for r in res])
 
-    res = await asyncio.to_thread(convert_answer, response, req.task_id)
-    await asyncio.to_thread(send_result, res)
-    return res
+            try:
+                if not validate_answer(response):
+                    raise Exception("Failed to generate model")
+
+                res.extend(await asyncio.to_thread(convert_answer, response, unsuitable))
+
+            except Exception as e:
+                if attempt < 5:
+                    await asyncio.sleep(1)
+                    continue
+
+                else:
+                    raise e
+
+            if len(res) < 10:
+                await asyncio.sleep(1)
+                continue
+
+            resp = GenerationResultRequest(task_id=req.task_id, result=res, generated_at=datetime.now().isoformat())
+            print(resp.result)
+            await asyncio.to_thread(send_result, resp)
+            return res
+
+        except Exception as e:
+            traceback.print_exc()
+
+            if attempt < 5:
+                await asyncio.sleep(1)
+                continue
+
+            else:
+                raise e
+    return None
+
+
+def _call_model_sync(req: Task, unsuitable_books: Optional[List[Dict]] = None):
+    return model_client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": create_prompt(req.request, unsuitable_books)}],
+    )
