@@ -48,7 +48,7 @@ public class BookController {
     String q = (search != null && !search.isBlank()) ? search.trim() : null;
 
     Specification<Book> spec = Specification.allOf(
-      BookSpecifications.titleContains(q),
+      BookSpecifications.authorOrTitleContains(q),
       BookSpecifications.authorInIgnoreCase(authors),
       BookSpecifications.genresAnyIgnoreCase(genres),
       BookSpecifications.yearBetween(yearFrom, yearTo),
