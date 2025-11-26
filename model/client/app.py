@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -8,15 +9,15 @@ from client.lm_client import ensure_language_model, start_language_model, stop_l
 from client.routes import generate_router
 from client.server import register, ping_server, deregister
 
-app = FastAPI(title="Client", debug=True)
 
 client_id: str = ""
 
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global client_id
 
+    # Startup
     try:
         await embedding_manager.initialize_embeddings()
     except Exception as e:
@@ -32,12 +33,12 @@ async def startup():
     client_id = await register()
     asyncio.create_task(ping_server(client_id))
 
+    # Application
+    yield
 
-@app.on_event("shutdown")
-async def shutdown():
-    global client_id
+    # Shutdown
     try:
-        await asyncio.to_thread(deregister, client_id)
+        await deregister(client_id)
 
     except Exception:
         pass
@@ -46,6 +47,7 @@ async def shutdown():
     await asyncio.to_thread(close_db_pool)
 
 
+app = FastAPI(title="Client", debug=True, lifespan=lifespan)
 app.include_router(generate_router)
 
 if __name__ == "__main__":
