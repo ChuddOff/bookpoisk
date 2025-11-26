@@ -15,3 +15,9 @@ class GenerationResultRequest(BaseModel):
     task_id: str
     result: List[Book]
     generated_at: str = datetime.now(timezone.utc).isoformat()
+
+class BackendGenerationRequest(BaseModel):
+    userId: str
+    books: List[Book]
+    callbackUrl: str
+    requestId: str
