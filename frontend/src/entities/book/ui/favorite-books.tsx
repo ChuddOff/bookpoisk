@@ -19,7 +19,7 @@ export function FavoriteBooks({
   const items = data?.data ?? [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <>
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -64,6 +64,6 @@ export function FavoriteBooks({
           Сгенерировать рекомендации
         </Button>
       </div>
-    </div>
+    </>
   );
 }
