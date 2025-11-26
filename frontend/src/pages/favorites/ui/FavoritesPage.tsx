@@ -42,9 +42,13 @@ export function FavoritesPage() {
 
   return (
     <Container className="gap-8">
-      {!ganres.length && !error && !errorCurrent && (
-        <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
-      )}
+      {!ganres.length &&
+        !error &&
+        !errorCurrent &&
+        !isMutatingCurrent &&
+        !isMutating && (
+          <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
+        )}
       {(!!isMutatingCurrent || !!error || !!errorCurrent) && (
         <GeneratingComposer
           active={true}

@@ -168,7 +168,7 @@ export function GeneratingComposer({
               </div>
             </div>
 
-            <div className="text-sm text-slate-600 flex items-center justify-center flex-1">
+            <div className="text-sm text-slate-600 flex items-center justify-start flex-1">
               {/* статус, печатается справа под "Думаю" */}
               <TypingText text={status} speed={20} showCursor={true} />
             </div>
