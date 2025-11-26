@@ -58,8 +58,13 @@ export class BookService {
 
   async postBooksForMe() {
     const res = await httpAuth
-      .post<BookDto[]>(ENDPOINT.bookForMe)
+      .post<{ poll: string }>(ENDPOINT.bookForMe)
       .then((res) => res.data);
+    return res;
+  }
+
+  async postBooksForMeCurrent(url: string) {
+    const res = await httpAuth.post<BookDto[][]>(url).then((res) => res.data);
     return res;
   }
 
