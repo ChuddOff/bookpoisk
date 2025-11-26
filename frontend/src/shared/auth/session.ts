@@ -68,8 +68,6 @@ export const saveTokenStorage = (accessToken: string, years = 1): void => {
  * Удаление accessToken (и refreshToken тоже — removeFromStorage покрывает оба)
  */
 export const removeFromStorage = (): void => {
-  console.log(1212);
-
   try {
     lsRemove(ACCESS_TOKEN);
     lsRemove(REFRESH_TOKEN);

@@ -15,8 +15,11 @@ const categories: string[] = ["Похожее", "Что-то новое"];
 
 export function FavoritesPage() {
   const { trigger, isMutating, error } = useBooksForMe();
-  const { trigger: triggerCurrent, isMutating: isMutatingCurrent } =
-    useBooksForMeCurrent();
+  const {
+    trigger: triggerCurrent,
+    isMutating: isMutatingCurrent,
+    error: errorCurrent,
+  } = useBooksForMeCurrent();
   const { mutate } = useSWRConfig();
   //@ts-ignore
   const [ganres, setGanres] = React.useState<BookEntity[][]>([]);
@@ -37,14 +40,12 @@ export function FavoritesPage() {
     }
   }, [mutate]);
 
-  console.log(!!isMutatingCurrent || !!error);
-
   return (
     <Container className="gap-8">
       {!ganres.length && !error && !isMutating && (
         <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
       )}
-      {(!!isMutatingCurrent || !!error) && (
+      {(!!isMutatingCurrent || !!error || !!errorCurrent) && (
         <GeneratingComposer
           active={true}
           titles={["Похожее", "Что-то новое", "Выбор редакции"]}
