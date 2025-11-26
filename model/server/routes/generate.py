@@ -86,7 +86,7 @@ async def result(req: GenerationResultRequest, api_key: str = Depends(verify_api
     # пересылаем результат на BACKEND_URL (если нужно)
     try:
         async with httpx.AsyncClient() as client_sess:
-            await client_sess.post(BACKEND_URL, json={"task_id": req.task_id, "result": req.result, "generated_at": req.generated_at}, timeout=10.0)
+            await client_sess.post(BACKEND_URL, json={"similar": req.result, "new": [], "genre": []}, timeout=10.0)
     except Exception:
         # логируем, но не падаем
         pass
