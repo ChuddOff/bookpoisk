@@ -21,6 +21,6 @@ async def ping_server(client_id: str, interval: int = 60):
 
 async def deregister(client_id: str):
     async with httpx.AsyncClient() as client:
-        response = await client.delete(f"{SERVER_URL}clients/remove", headers={"client_id": client_id})
+        response = await client.delete(f"{SERVER_URL}clients/remove", params={"client_id": client_id})
         data = response.json()
         return data["client_id"] == client_id

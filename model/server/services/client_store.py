@@ -26,18 +26,24 @@ class MemoryClientStore(BaseClientStore):
         return self.get(client_id)
 
     def get(self, client_id: str) -> Optional[Client]:
-        return Client(**self.clients.get(client_id))
+        raw = self.clients.get(client_id)
+        if not raw:
+            return None
+        return Client(**raw)
 
     def all(self) -> List[Client]:
         self._cleanup()
-        return list([Client(**i) for i in self.clients.values()])
+        return [Client(**i) for i in self.clients.values()]
 
     def delete(self, client_id: str) -> Optional[Client]:
-        return Client(**self.clients.pop(client_id, None))
+        raw = self.clients.pop(client_id, None)
+        if not raw:
+            return None
+        return Client(**raw)
 
     def update(self, client_id: str) -> Optional[Client]:
         if client_id in self.clients:
-            self.clients[client_id]["last_update"] = datetime.now(timezone.utc)
+            self.clients[client_id]["last_update"] = datetime.now(timezone.utc).isoformat()
         return self.get(client_id)
 
     def _cleanup(self):
@@ -46,6 +52,7 @@ class MemoryClientStore(BaseClientStore):
         for client_id, client in list(self.clients.items()):
             if (now - datetime.fromisoformat(client["last_update"])).total_seconds() > self.ttl:
                 self.delete(client_id)
+
 
 
 class RedisClientStore(BaseClientStore):

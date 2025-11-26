@@ -36,5 +36,5 @@ async def measure_ping(server_url: str) -> int:
 
 def send_result(result: GenerationResultRequest) -> None:
     url = f"{SERVER_URL}generate/result"
-    headers = {"x-api-key": API_KEY, "Content-Type": "application/json"}
+    headers = {"x-api-key": API_KEY, "Content-Type": "application/json", "client-id": result.client_id}
     requests.post(url, json=result.model_dump(), headers=headers, timeout=10)

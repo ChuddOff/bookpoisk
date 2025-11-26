@@ -37,12 +37,14 @@ class ClientManager:
         return self.store.all()
 
     def get_best_client(self) -> Optional[Client]:
+        # выбираем только свободных клиентов
         clients = [client for client in self.store.all() if not client.busy]
 
         if not clients:
             return None
 
-        return sorted(clients, key=lambda client: client.ping or 9999)[0]
+        # используем очень большое число, если ping None
+        return min(clients, key=lambda c: c.ping if c.ping is not None else 999999)
 
     def remove_client(self, client_id: str) -> Optional[Client]:
         return self.store.delete(client_id)
