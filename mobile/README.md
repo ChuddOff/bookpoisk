@@ -1,16 +1,20 @@
-# bookpoisk_app
+# Bookpoisk Mobile (React Native)
 
-A new Flutter project.
+Новая мобильная версия повторяет логику веб-клиента на React Native / Expo. 
+Основной API базируется на том же бекенде, что и фронтенд (см. `EXPO_PUBLIC_API_URL`).
 
-## Getting Started
+## Скрипты
+- `npm start` — запуск Expo Dev Server
+- `npm run android` / `npm run ios` / `npm run web` — платформа-специфичные точки входа
 
-This project is a starting point for a Flutter application.
+## Переменные окружения
+Укажите `EXPO_PUBLIC_API_URL` (например, `https://api.example.com`) чтобы HTTP-клиент ходил к нужному бэкенду.
 
-A few resources to get you started if this is your first Flutter project:
+## Структура
+- `src/api` — HTTP-клиент, сервисы и эндпоинты
+- `src/screens` — экраны (Главная, Каталог, Книга, Избранное, Профиль)
+- `src/components` — переиспользуемые UI-компоненты
+- `src/providers` — React Query и auth-провайдер
+- `src/hooks` — data hooks для книг, жанров и избранного
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Токены доступа/обновления хранятся в `AsyncStorage` (см. `src/storage/tokens.ts`).

@@ -48,7 +48,7 @@ public class BookController {
     String q = (search != null && !search.isBlank()) ? search.trim() : null;
 
     Specification<Book> spec = Specification.allOf(
-      BookSpecifications.titleContains(q),
+      BookSpecifications.authorOrTitleContains(q),
       BookSpecifications.authorInIgnoreCase(authors),
       BookSpecifications.genresAnyIgnoreCase(genres),
       BookSpecifications.yearBetween(yearFrom, yearTo),
@@ -102,20 +102,5 @@ public class BookController {
   @GetMapping("/genres")
   public List<String> booksSelection() {
     return repo.findAllGenres();
-  }
-
-  @GetMapping("/generate/get")
-  public String giveBooksToLM() { // List<Book> вместо String
-    return "";
-  }
-
-  @PostMapping("/generate/post")
-  public void takeBooksToLM(List<Book> books) {
-    generatedBooks = books;
-  }
-
-  @GetMapping("/books_ai")
-  public List<Book> aiToFront() {
-    return generatedBooks;
   }
 }
