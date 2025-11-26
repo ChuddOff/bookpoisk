@@ -4,3 +4,4 @@ export * from "./swr/useBooks";
 export * from "./swr/useLikedBooksMe";
 export * from "./swr/useLikeBook";
 export * from "./swr/use-genres";
+export * from "./swr/useBooksForMeCurrent";
