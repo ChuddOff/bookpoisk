@@ -13,3 +13,9 @@ class Task(BaseModel):
     completed_at: Optional[str] = None
     request: Optional[GenerationRequest] = None
     result: Optional[Any] = None
+
+    # новые поля:
+    backend_callback: Optional[str] = None
+    backend_request_id: Optional[str] = None
+    backend_user_id: Optional[str] = None
+
