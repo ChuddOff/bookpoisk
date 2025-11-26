@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from client.core import set_client_id, get_client_id
 from client.database import close_db_pool
 from client.embeddings import embedding_manager
 from client.lm_client import ensure_language_model, start_language_model, stop_language_model
@@ -10,13 +11,8 @@ from client.routes import generate_router
 from client.server import register, ping_server, deregister
 
 
-client_id: str = ""
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global client_id
-
     # Startup
     try:
         await embedding_manager.initialize_embeddings()
@@ -30,15 +26,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print("language model initialization error:", e)
 
-    client_id = await register()
-    asyncio.create_task(ping_server(client_id))
+    set_client_id(await register())
+    print(get_client_id())
+    asyncio.create_task(ping_server(get_client_id()))
 
     # Application
     yield
 
     # Shutdown
     try:
-        await deregister(client_id)
+        await deregister(get_client_id())
 
     except Exception:
         pass

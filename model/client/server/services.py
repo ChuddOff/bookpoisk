@@ -4,7 +4,7 @@ import time
 import requests
 import httpx
 
-from client.core import SERVER_URL, API_KEY
+from client.core import SERVER_URL, API_KEY, get_client_id
 from client.models import GenerationResultRequest
 
 
@@ -36,5 +36,5 @@ async def measure_ping(server_url: str) -> int:
 
 def send_result(result: GenerationResultRequest) -> None:
     url = f"{SERVER_URL}generate/result"
-    headers = {"x-api-key": API_KEY, "Content-Type": "application/json", "client-id": result.client_id}
+    headers = {"x-api-key": API_KEY, "Content-Type": "application/json", "client-id": get_client_id()}
     requests.post(url, json=result.model_dump(), headers=headers, timeout=10)
