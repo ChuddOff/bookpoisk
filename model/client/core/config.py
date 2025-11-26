@@ -28,3 +28,15 @@ DB_CONFIG = {
 }
 
 pool = SimpleConnectionPool(1, 10, **DB_CONFIG)
+
+# CLIENT SETTINGS #
+CLIENT_ID = ""
+
+
+def set_client_id(client_id):
+    global CLIENT_ID
+    CLIENT_ID = client_id
+
+
+def get_client_id():
+    return CLIENT_ID

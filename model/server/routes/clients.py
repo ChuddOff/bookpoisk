@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Query
 from fastapi.params import Depends
 from starlette.responses import JSONResponse
 
@@ -20,7 +20,7 @@ async def clients_register(req: ClientRegisterRequest, api_key: str = Depends(ve
 
 
 @client_router.delete('/remove', status_code=200)
-async def client_delete(client_id: str = Header(...)):
+async def client_delete(client_id: str = Query(...)):
     client = client_manager.remove_client(client_id)
     if not client:
         return JSONResponse(status_code=404, content={"error": "client not found"})
@@ -29,7 +29,11 @@ async def client_delete(client_id: str = Header(...)):
 
 @client_router.get('/best', status_code=200)
 async def clients_best() -> JSONResponse:
-    client = client_manager.get_best_client()
+    client = client_manager.best_client()
+
+    if client is None:
+        return JSONResponse(status_code=503, content={"detail": "No available clients"})
+
     return JSONResponse(status_code=200, content=client.model_dump())
 
 @client_router.post('/ping', status_code=200)
