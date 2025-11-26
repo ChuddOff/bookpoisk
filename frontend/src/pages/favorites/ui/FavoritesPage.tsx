@@ -7,10 +7,16 @@ import {
   type BookEntity,
 } from "@/entities/book";
 import { useBooksForMe } from "@/entities/book/api/swr/useBooksForMe";
+import { Container } from "@/shared";
+import { SectionFeed } from "@/widgets";
+import { GeneratingComposer } from "@/widgets/generator/GeneratingComposer";
+
+const categories: string[] = ["Похожее", "Что-то новое"];
 
 export function FavoritesPage() {
-  const { trigger, isMutating } = useBooksForMe();
-  const { trigger: triggerCurrent } = useBooksForMeCurrent();
+  const { trigger, isMutating, error } = useBooksForMe();
+  const { trigger: triggerCurrent, isMutating: isMutatingCurrent } =
+    useBooksForMeCurrent();
   const { mutate } = useSWRConfig();
   //@ts-ignore
   const [ganres, setGanres] = React.useState<BookEntity[][]>([]);
@@ -24,17 +30,38 @@ export function FavoritesPage() {
     try {
       const res: string = (await trigger()).poll;
       localStorage.setItem("poll", res);
-      triggerCurrent({ url: res });
+      const books: BookEntity[][] = await triggerCurrent({ url: res });
+      setGanres(books);
     } catch (e: any) {
       console.error(e);
     }
   }, [mutate]);
 
+  console.log(!!isMutatingCurrent || !!error);
+
   return (
-    <>
-      {!ganres.length && (
+    <Container className="gap-8">
+      {!ganres.length && !error && !isMutating && (
         <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
       )}
-    </>
+      {(!!isMutatingCurrent || !!error) && (
+        <GeneratingComposer
+          active={true}
+          titles={["Похожее", "Что-то новое", "Выбор редакции"]}
+          skeletonPerSection={8}
+          totalDuration={60000}
+        />
+      )}
+      {!!ganres.length && (
+        <div className="space-y-10">
+          {ganres.map((_, i) => (
+            <SectionFeed
+              key={i}
+              title={i === 2 ? "Выбор редакции" : categories[i]}
+            />
+          ))}
+        </div>
+      )}
+    </Container>
   );
 }

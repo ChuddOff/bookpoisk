@@ -4,6 +4,7 @@ import {
   BookCard,
   BookCardSkeleton,
   useBooks,
+  type BookEntity,
   type ListParams,
 } from "@/entities/book";
 import { HorizontalCarousel } from "@/widgets/carousels";
@@ -11,8 +12,9 @@ import { Button, cn } from "@/shared/ui";
 
 type Props = {
   title: string;
-  params: ListParams;
+  params?: ListParams;
   moreHref?: string;
+  books?: BookEntity[];
   className?: string;
 };
 
@@ -20,6 +22,7 @@ export function SectionFeed({
   title,
   params,
   className,
+  books,
   moreHref = "/catalog",
 }: Props) {
   const { isLoading, error, mutate, data } = useBooks({
@@ -28,7 +31,7 @@ export function SectionFeed({
     ...params,
   });
 
-  const items = data?.data ?? [];
+  const items = books ?? data?.data ?? [];
 
   return (
     <section className={cn("space-y-3", className)}>
@@ -37,7 +40,7 @@ export function SectionFeed({
         <Button variant="outline" asChild>
           <a
             href={`${moreHref}?${new URLSearchParams({
-              genres: params.genres?.join(",") ?? "",
+              genres: params?.genres?.join(",") ?? "",
               page: "1",
               per_page: "12",
             }).toString()}`}
