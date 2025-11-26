@@ -17,8 +17,6 @@ export function BookCard({ book }: Props) {
     }
   };
 
-  console.log(book.genres);
-
   return (
     <Card
       role="link"

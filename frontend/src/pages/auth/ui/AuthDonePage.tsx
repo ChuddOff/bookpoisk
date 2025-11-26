@@ -12,12 +12,10 @@ export function AuthDonePage() {
     async function handle() {
       // 1) Попробуем найти token в query: ?access=... или ?token=...
       const searchParams = new URLSearchParams(window.location.search);
-      console.log(searchParams);
 
       let token = searchParams.get("access") ?? null;
 
       let refresh = searchParams.get("refresh") ?? null;
-      console.log(refresh);
 
       // 2) Если не в search, попробуем в hash (#access=...)
       if (!token && window.location.hash) {
