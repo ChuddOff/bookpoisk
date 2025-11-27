@@ -61,7 +61,7 @@ public class JwtUtil {
   public Jws<Claims> parse(String token) {
     return Jwts.parser()
       .verifyWith(key) // сообщает парсеру, каким ключом проверки пользоваться
-      .build() // строит финальный объект парсера (immutable) с учётом всех настроек (в том числе ключа из verifyWith
+      .build() // строит финальный объект парсера (immutable) с учётом всех настроек (в том числе ключа из verifyWith)
       .parseSignedClaims(token); // парсит подписанный JWT (JWS) с payload-типа Claims и проверяет подпись
   }
 }
