@@ -58,7 +58,7 @@ public class FrontToLmController {
   }
 
   /** Шаг 2: фронт опрашивает результат по requestId */
-  @GetMapping("/booksForMe/result/{requestId}")
+  @PostMapping("/booksForMe/result/{requestId}")
   public ResponseEntity<?> pollBooksForMe(@PathVariable UUID requestId) {
     return store.take(requestId)
       .<ResponseEntity<?>>map(ResponseEntity::ok)
