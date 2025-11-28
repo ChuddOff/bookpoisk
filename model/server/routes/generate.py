@@ -156,7 +156,7 @@ async def result_from_client(
     if not task_loc:
         return JSONResponse(status_code=404, content={"error": "task not found"})
 
-    # сохраняем результат
+    # сохраняем результат у себя
     task_manager.complete(req.task_id, req.result)
 
     # освобождаем клиента
@@ -169,15 +169,28 @@ async def result_from_client(
     # --- самое главное: callback на БЭК ---
 
     callback_url = task_loc.backend_callback
-    recommended = req.result
+    recommended = req.result          # это список FavouriteBookDto в виде dict'ов
+    user_id = task_loc.backend_user_id        # <- ты говорил, что тут есть user_id
+
+    # формируем payload под LmCallbackPayload на backend'е
+    callback_payload = {
+        "userId": str(user_id),       # на всякий случай строкой (UUID как строка)
+        "recommendations": recommended
+    }
+
+    # готовим заголовки
+    headers = {}
+    secret = os.getenv("LM_WEBHOOK_SECRET") or os.getenv("X_LM_SECRET")
+    if secret:
+        headers["X-LM-Secret"] = secret
 
     try:
         async with httpx.AsyncClient() as s:
             await s.post(
                 callback_url,
-                json=recommended,
-                headers={"X-LM-Secret": os.getenv("X_LM_SECRET", "")},
-                timeout=15.0
+                json=callback_payload,
+                headers=headers,
+                timeout=15.0,
             )
     except Exception as e:
         return JSONResponse(
