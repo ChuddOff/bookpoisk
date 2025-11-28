@@ -6,6 +6,11 @@ import { HorizontalCarousel } from "@/widgets/carousels";
 import { cn } from "@/shared/ui/cn";
 
 type Props = {
+  active?: boolean;
+  titles?: string[];
+  skeletonPerSection?: number;
+  totalDuration?: number; // ms overall target duration (по умолчанию ~60s)
+  timeScale?: number; // множитель длительности (по умолчанию 3)
   className?: string;
 };
 
@@ -68,12 +73,14 @@ const ACTION_TEMPLATES = [
   "Завершаю предварительную генерацию…",
 ];
 
-export function GeneratingComposer({ className }: Props) {
-  const skeletonPerSection = 8;
-  const totalDuration = 60000;
-  const timeScale = 3;
-  const titles = ["Похожее", "Что-то новое", "Выбор редакции"];
-  const active = true;
+export function GeneratingComposer({
+  active = true,
+  titles = ["Название", "Автор", "Жанр"],
+  skeletonPerSection = 8,
+  totalDuration = 60000,
+  timeScale = 3,
+  className,
+}: Props) {
   const [sections, setSections] = React.useState<
     { title: string; items: number }[]
   >([]);
