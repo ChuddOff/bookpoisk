@@ -1,15 +1,17 @@
 import { bookService } from "../book.service";
-import type { BookDto } from "../../model/dto";
+import type { GenresResponseDto } from "../../model/dto";
 import useSWRMutation, { type SWRMutationConfiguration } from "swr/mutation";
 
 type Arg = { url: string };
 
 export function useBooksForMeCurrent(
-  options?: SWRMutationConfiguration<BookDto[][], any, string, Arg> & {
-    throwOnError?: boolean;
-  }
+  options?:
+    | (SWRMutationConfiguration<GenresResponseDto, any, string, Arg> & {
+        throwOnError?: boolean;
+      })
+    | undefined
 ) {
-  return useSWRMutation<BookDto[][], any, string, Arg>(
+  return useSWRMutation<GenresResponseDto, any, string, Arg>(
     "postBooksForMe",
     // mutationFn принимает (key, { arg })
     //@ts-ignore
