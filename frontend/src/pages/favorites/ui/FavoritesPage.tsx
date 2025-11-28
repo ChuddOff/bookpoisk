@@ -59,7 +59,7 @@ export function FavoritesPage() {
       {!ganres.length && !started && (
         <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
       )}
-      {!ganres.length && started && <GeneratingComposer />}
+      {!ganres.length && started && <GeneratingComposer active />}
       {!!ganres.length && (
         <div className="flex items-center justify-between">
           <div className="space-y-10">
