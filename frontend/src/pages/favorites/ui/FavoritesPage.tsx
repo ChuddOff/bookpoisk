@@ -59,20 +59,14 @@ export function FavoritesPage() {
       {!ganres.length && !started && (
         <FavoriteBooks onClick={handleGenerate} generating={isMutating} />
       )}
-      {!ganres.length && started && (
-        <GeneratingComposer
-          active={true}
-          titles={["Похожее", "Что-то новое", "Выбор редакции"]}
-          skeletonPerSection={8}
-          totalDuration={60000}
-        />
-      )}
+      {!ganres.length && started && <GeneratingComposer />}
       {!!ganres.length && (
         <div className="flex items-center justify-between">
           <div className="space-y-10">
-            {ganres.map((_, i) => (
+            {ganres.map((books, i) => (
               <SectionFeed
                 key={i}
+                books={books}
                 title={i === 2 ? "Выбор редакции" : categories[i]}
               />
             ))}
