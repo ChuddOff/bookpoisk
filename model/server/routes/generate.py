@@ -10,6 +10,10 @@ from model.server.models import BackendGenerationRequest, Book
 from model.server.core import embedding_service
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("server")
 
 generate_router = APIRouter(prefix="/generate", tags=["Generation"])
 
@@ -57,21 +61,21 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
     if secret:
         headers["X-LM-Secret"] = secret
 
-    print("\n=== 🔥 SENDING CALLBACK TO BACKEND ===")
-    print("URL:", callback_url)
-    print("Payload:", json.dumps(payload, ensure_ascii=False, indent=2))
-    print("Headers:", headers)
+    logger.info("\n=== 🔥 SENDING CALLBACK TO BACKEND ===")
+    logger.info("URL:", callback_url)
+    logger.info("Payload:", json.dumps(payload, ensure_ascii=False, indent=2))
+    logger.info("Headers:", headers)
 
     async with httpx.AsyncClient() as c:
         try:
             resp = await c.post(callback_url, json=payload, headers=headers, timeout=15.0)
 
-            print("\n=== 🔥 BACKEND CALLBACK RESPONSE ===")
-            print("Status:", resp.status_code)
-            print("Body:", resp.text)
+            logger.info("\n=== 🔥 BACKEND CALLBACK RESPONSE ===")
+            logger.info("Status:", resp.status_code)
+            logger.info("Body:", resp.text)
         except Exception as e:
-            print("\n=== ❌ BACKEND CALLBACK FAILED ===")
-            print("Error:", e)
+            logger.info("\n=== ❌ BACKEND CALLBACK FAILED ===")
+            logger.info("Error:", e)
 
 
 # ==================================================================
@@ -80,10 +84,10 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
 @generate_router.post("/", status_code=202)
 async def generate(req: BackendGenerationRequest, api_key: str = Depends(verify_api_key)):
     try:
-        print("\n=== 🔥 RAW BACKEND REQUEST RECEIVED ===")
-        print(req.model_dump_json(indent=2))
+        logger.info("\n=== 🔥 RAW BACKEND REQUEST RECEIVED ===")
+        logger.info(req.model_dump_json(indent=2))
     except Exception:
-        print("Failed to print req")
+        logger.info("Failed to print req")
 
     # Создаём задачу
     task = task_manager.create(req)
