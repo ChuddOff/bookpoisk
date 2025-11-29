@@ -1,4 +1,6 @@
 import os
+import sys
+
 from dotenv import load_dotenv
 
 from model.server.services import ClientManager, TaskManager, MemoryClientStore
@@ -6,6 +8,8 @@ from model.server.services.book_repository import DBBookRepository
 from model.server.services.embedding_service import EmbeddingService
 
 load_dotenv()
+
+sys.stdout.reconfigure(line_buffering=True)
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
