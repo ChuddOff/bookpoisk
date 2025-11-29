@@ -6,3 +6,4 @@ pydantic~=2.12.3
 starlette~=0.48.0
 httpx~=0.28.1
 redis~=7.0.1
+numpy
