@@ -52,17 +52,27 @@ export function FavoritesPage() {
       {!!ganres.length && (
         <div className="flex items-center justify-between">
           <div className="space-y-10">
-            <SectionFeed key={0} books={ganres.slice(0, 8)} title={"Похожее"} />
-            <SectionFeed
-              key={1}
-              books={ganres.slice(8, 16)}
-              title={"Что-то новое"}
-            />
-            <SectionFeed
-              key={2}
-              books={ganres.slice(16, 24)}
-              title={"Выбор редакции"}
-            />
+            {!!ganres.slice(0, 8).length && (
+              <SectionFeed
+                key={0}
+                books={ganres.slice(0, 8)}
+                title={"Похожее"}
+              />
+            )}
+            {!!ganres.slice(8, 16).length && (
+              <SectionFeed
+                key={1}
+                books={ganres.slice(8, 16)}
+                title={"Похожее"}
+              />
+            )}
+            {!!ganres.slice(16, 24).length && (
+              <SectionFeed
+                key={2}
+                books={ganres.slice(16, 24)}
+                title={"Похожее"}
+              />
+            )}
           </div>
           <div className="mt-6 flex justify-center mx-auto">
             <Button
