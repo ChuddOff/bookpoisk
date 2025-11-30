@@ -1,14 +1,15 @@
+import uuid
 from typing import Optional, List
 
 from pydantic import BaseModel
 
 
 class Book(BaseModel):
-    bookId: str
+    id: str | uuid.UUID
     title: str
     author: Optional[str] = None
-    year: Optional[int] = None
-    description: Optional[str] = None
     genres: Optional[List[str]] = None
-    coverUrl: Optional[str] = None
+    description: Optional[str] = None
+    year: Optional[int] = None
+    cover: Optional[str] = None
     pages: Optional[int] = None
