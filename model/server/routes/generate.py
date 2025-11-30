@@ -81,11 +81,15 @@ async def generate(req: BackendGenerationRequest):
     seen = set()
 
     def add_list(lst):
+        ls = []
+
         for b in lst:
             key = (b.get("title", "").lower(), b.get("author", "").lower())
             if key not in seen:
                 seen.add(key)
-                combined.append(b)
+                ls.append(b)
+
+        combined.append(ls)
 
     add_list(recs.get("similar", []))
     add_list(recs.get("novel", []))
