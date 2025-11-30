@@ -65,7 +65,9 @@ export class BookService {
   }
 
   async postBooksForMeCurrent(url: string) {
-    const res = await httpAuth.post<BookEntity[]>(url).then((res) => res.data);
+    const res = await httpAuth
+      .post<BookEntity[][]>(url)
+      .then((res) => res.data);
     return res;
   }
 

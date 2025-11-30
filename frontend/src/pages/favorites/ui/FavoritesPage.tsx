@@ -12,13 +12,15 @@ import { SectionFeed } from "@/widgets";
 import { GeneratingComposer } from "@/widgets/generator/GeneratingComposer";
 import { Loader2 } from "lucide-react";
 
+const titles = ["Похожее", "Что-то новое", "Выбор редакции"];
+
 export function FavoritesPage() {
   const { trigger, isMutating } = useBooksForMe();
   const { trigger: triggerCurrent, isMutating: isMutatingCurrent } =
     useBooksForMeCurrent();
   const { mutate } = useSWRConfig();
   //@ts-ignore
-  const [ganres, setGanres] = React.useState<BookEntity[]>([]);
+  const [ganres, setGanres] = React.useState<BookEntity[][]>([]);
   const [started, setStarted] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -31,7 +33,7 @@ export function FavoritesPage() {
     try {
       const res: string = (await trigger()).poll;
       localStorage.setItem("poll", res);
-      let books: BookEntity[] = await triggerCurrent({ url: res });
+      let books: BookEntity[][] = await triggerCurrent({ url: res });
       while (!Array.isArray(books)) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         books = await triggerCurrent({ url: res });
@@ -52,27 +54,9 @@ export function FavoritesPage() {
       {!!ganres.length && (
         <div className="flex flex-col items-center justify-between w-full">
           <div className="space-y-10 w-full">
-            {!!ganres.slice(0, 8).length && (
-              <SectionFeed
-                key={0}
-                books={ganres.slice(0, 8)}
-                title={"Похожее"}
-              />
-            )}
-            {!!ganres.slice(8, 16).length && (
-              <SectionFeed
-                key={1}
-                books={ganres.slice(8, 16)}
-                title={"Что-то новое"}
-              />
-            )}
-            {!!ganres.slice(16, 24).length && (
-              <SectionFeed
-                key={2}
-                books={ganres.slice(16, 24)}
-                title={"Выбор редакции"}
-              />
-            )}
+            {ganres.map((books, i) => (
+              <SectionFeed key={i} title={titles[i]} books={books} />
+            ))}
           </div>
           <div className="mt-6 flex justify-center mx-auto">
             <Button

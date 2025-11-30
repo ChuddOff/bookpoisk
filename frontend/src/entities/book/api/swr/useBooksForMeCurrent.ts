@@ -6,12 +6,12 @@ type Arg = { url: string };
 
 export function useBooksForMeCurrent(
   options?:
-    | (SWRMutationConfiguration<BookEntity[], any, string, Arg> & {
+    | (SWRMutationConfiguration<BookEntity[][], any, string, Arg> & {
         throwOnError?: boolean;
       })
     | undefined
 ) {
-  return useSWRMutation<BookEntity[], any, string, Arg>(
+  return useSWRMutation<BookEntity[][], any, string, Arg>(
     "postBooksForMe",
     // mutationFn принимает (key, { arg })
     //@ts-ignore
