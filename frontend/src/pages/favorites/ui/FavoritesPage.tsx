@@ -54,9 +54,16 @@ export function FavoritesPage() {
       {!!ganres.length && (
         <div className="flex flex-col items-center justify-between w-full">
           <div className="space-y-10 w-full">
-            {ganres.map((books, i) => (
-              <SectionFeed key={i} title={titles[i]} books={books} />
-            ))}
+            {ganres
+              .filter((item) => !!item.length)
+              .map((books, i) => (
+                <SectionFeed
+                  key={i}
+                  title={titles[i]}
+                  books={books}
+                  moreButton={false}
+                />
+              ))}
           </div>
           <div className="mt-6 flex justify-center mx-auto">
             <Button
