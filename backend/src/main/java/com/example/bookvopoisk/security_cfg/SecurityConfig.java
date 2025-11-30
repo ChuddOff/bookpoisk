@@ -51,7 +51,6 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/lm/**").permitAll()
-        .requestMatchers(HttpMethod.POST, "/booksForMe/result/**").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())
