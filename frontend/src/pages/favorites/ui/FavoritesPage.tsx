@@ -63,14 +63,14 @@ export function FavoritesPage() {
               <SectionFeed
                 key={1}
                 books={ganres.slice(8, 16)}
-                title={"Похожее"}
+                title={"Что-то новое"}
               />
             )}
             {!!ganres.slice(16, 24).length && (
               <SectionFeed
                 key={2}
                 books={ganres.slice(16, 24)}
-                title={"Похожее"}
+                title={"Выбор редакции"}
               />
             )}
           </div>
