@@ -82,7 +82,7 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
 #                            /generate
 # ==================================================================
 @generate_router.post("/", status_code=202)
-async def generate(req: BackendGenerationRequest, api_key: str = Depends(verify_api_key)):
+async def generate(req: BackendGenerationRequest):
     print("RAW REQUEST:", req)
 
     # Создаём задачу
