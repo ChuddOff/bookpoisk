@@ -1,5 +1,3 @@
-import json
-import logging
 import os
 from typing import Optional, List
 
@@ -26,9 +24,6 @@ class ValidationResult(BaseModel):
     invalid: Optional[List[Book]] = None
 
 
-# ----------------------------------------------------------
-# SEND VALIDATION TO CLIENT
-# ----------------------------------------------------------
 async def _send_validation(client, task_id: str, candidates: List[Book]):
     payload = {
         "task_id": task_id,
@@ -44,39 +39,27 @@ async def _send_validation(client, task_id: str, candidates: List[Book]):
         )
 
 
-# ----------------------------------------------------------
-# FINAL CALLBACK TO BACKEND
-# ----------------------------------------------------------
 async def _callback(callback_url: str, user_id: str, recommendations: List[List[dict]]):
-    """
-    recommendations MUST be a flat list of dicts. Never categories!
-    """
     payload = {
         "userId": user_id,
-        "recommendations": recommendations  # already list of dicts
+        "recommendations": recommendations
     }
 
     async with httpx.AsyncClient() as c:
         await c.post(callback_url, json=payload, timeout=15.0)
 
 
-# ==================================================================
-#                            /generate
-# ==================================================================
 @generate_router.post("/", status_code=202)
 async def generate(req: BackendGenerationRequest):
-    # Создаём задачу
     task = task_manager.create(req)
     task.backend_callback = req.callbackUrl
     task.backend_user_id = req.userId
     task.backend_request_id = req.requestId
 
-    # --- generate categories ---
     recs = embedding_service.get_recommendations(
         req.books, similar_top=8, novel_top=8, genre_top=8
     )
 
-    # --- build combined list ---
     combined = []
     seen = set()
 
@@ -95,15 +78,10 @@ async def generate(req: BackendGenerationRequest):
     add_list(recs.get("novel", []))
     add_list(recs.get("genre_similar", []))
 
-    # task.result must remain a list of dicts
     task.result = combined
 
-    # --- find a free validation client ---
     client = client_manager.get_best_client()
 
-    # ---------------------------------------------------------------
-    # NO CLIENT → immediate callback
-    # ---------------------------------------------------------------
     if not client:
         try:
             await _callback(req.callbackUrl, req.userId, combined)
@@ -119,14 +97,10 @@ async def generate(req: BackendGenerationRequest):
             }
         )
 
-    # ---------------------------------------------------------------
-    # CLIENT EXISTS → send validation request
-    # ---------------------------------------------------------------
     client.busy = True
     client_manager.store.register(client.client_id, client)
 
     try:
-        # validation must use only book list
         books_for_validation = [Book(**b) for b in combined]
         await _send_validation(client, task.task_id, books_for_validation)
 
@@ -137,7 +111,6 @@ async def generate(req: BackendGenerationRequest):
         client.busy = False
         client_manager.store.register(client.client_id, client)
 
-        # fallback callback
         try:
             await _callback(req.callbackUrl, req.userId, combined)
         except Exception as e:
@@ -147,9 +120,6 @@ async def generate(req: BackendGenerationRequest):
         return {"status": "done_without_validation", "task": task.task_id}
 
 
-# ==================================================================
-#                     /generate/result  (валидация)
-# ==================================================================
 @generate_router.post("/result", status_code=200)
 async def validation(
         req: ValidationResult,
@@ -160,16 +130,12 @@ async def validation(
     if not task:
         return {"error": "not found"}
 
-    # free client
     if client_id:
         client = client_manager.store.get(client_id)
         if client:
             client.busy = False
             client_manager.store.register(client_id, client)
 
-    # ---------------------------------------------------------------
-    # OK → final callback
-    # ---------------------------------------------------------------
     if req.ok:
         try:
             await _callback(task.backend_callback, task.backend_user_id, task.result)
@@ -179,9 +145,6 @@ async def validation(
         task_manager.complete(task.task_id, task.result)
         return {"status": "ok"}
 
-    # ---------------------------------------------------------------
-    # NOT OK → retry with new candidates
-    # ---------------------------------------------------------------
     invalid_books = [Book(**b) if isinstance(b, dict) else b for b in (req.invalid or [])]
     original = task.request.books
 
@@ -190,7 +153,6 @@ async def validation(
 
     next_client = client_manager.get_best_client()
 
-    # no client → callback immediately
     if not next_client:
         try:
             await _callback(task.backend_callback, task.backend_user_id, task.result)
@@ -200,7 +162,6 @@ async def validation(
         task_manager.complete(task.task_id, task.result)
         return {"status": "done_without_validation"}
 
-    # retry
     next_client.busy = True
     client_manager.store.register(next_client.client_id, next_client)
 
