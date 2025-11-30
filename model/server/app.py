@@ -6,7 +6,7 @@ import aiohttp
 import uvicorn
 from fastapi import FastAPI
 
-from server.core import BACKEND_URL
+from model.server.core import BACKEND_URL
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
