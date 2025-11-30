@@ -5,10 +5,11 @@ import type {
   PagedBooksResponseDto,
   GenresDto,
   BookDto,
+  BookEntity,
 } from "@/entities/book/model";
 import { ENDPOINT, getKey } from "@/shared";
 import { http, httpAuth } from "@/shared/api/axios";
-import type { GenresResponseDto, LikedBooks } from "../model/dto";
+import type { LikedBooks } from "../model/dto";
 
 export type ListParams = {
   page?: number;
@@ -64,9 +65,7 @@ export class BookService {
   }
 
   async postBooksForMeCurrent(url: string) {
-    const res = await httpAuth
-      .post<GenresResponseDto>(url)
-      .then((res) => res.data);
+    const res = await httpAuth.post<BookEntity[]>(url).then((res) => res.data);
     return res;
   }
 

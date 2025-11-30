@@ -16,6 +16,7 @@ type Props = {
   moreHref?: string;
   books?: BookEntity[];
   className?: string;
+  moreButton?: boolean;
 };
 
 export function SectionFeed({
@@ -24,6 +25,7 @@ export function SectionFeed({
   className,
   books,
   moreHref = "/catalog",
+  moreButton = true,
 }: Props) {
   const { isLoading, error, mutate, data } = useBooks({
     per_page: 10,
@@ -37,17 +39,19 @@ export function SectionFeed({
     <section className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-ink">{title}</h2>
-        <Button variant="outline" asChild>
-          <a
-            href={`${moreHref}?${new URLSearchParams({
-              genres: params?.genres?.join(",") ?? "",
-              page: "1",
-              per_page: "12",
-            }).toString()}`}
-          >
-            Ещё
-          </a>
-        </Button>
+        {moreButton && (
+          <Button variant="outline" asChild>
+            <a
+              href={`${moreHref}?${new URLSearchParams({
+                genres: params?.genres?.join(",") ?? "",
+                page: "1",
+                per_page: "12",
+              }).toString()}`}
+            >
+              Ещё
+            </a>
+          </Button>
+        )}
       </div>
 
       {isLoading && (
