@@ -47,7 +47,7 @@ async def _send_validation(client, task_id: str, candidates: List[Book]):
 # ----------------------------------------------------------
 # FINAL CALLBACK TO BACKEND
 # ----------------------------------------------------------
-async def _callback(callback_url: str, user_id: str, recommendations: List[dict]):
+async def _callback(callback_url: str, user_id: str, recommendations: List[List[dict]]):
     """
     recommendations MUST be a flat list of dicts. Never categories!
     """
@@ -73,7 +73,7 @@ async def generate(req: BackendGenerationRequest):
 
     # --- generate categories ---
     recs = embedding_service.get_recommendations(
-        req.books, similar_top=10, novel_top=10, genre_top=10
+        req.books, similar_top=8, novel_top=8, genre_top=8
     )
 
     # --- build combined list ---
