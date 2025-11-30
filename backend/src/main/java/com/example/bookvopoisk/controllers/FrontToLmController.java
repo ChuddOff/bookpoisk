@@ -74,6 +74,7 @@ public class FrontToLmController {
     @RequestHeader(name = "X-LM-Secret", required = false) String secret,
     @RequestBody LmCallbackPayload payload
   ) {
+    System.out.println("### lmCallback hit for requestId=" + requestId);
     if (webhookSecret != null && !webhookSecret.isBlank()) {
       if (secret == null || !webhookSecret.equals(secret)) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
