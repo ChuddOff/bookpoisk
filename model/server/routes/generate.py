@@ -69,86 +69,83 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
 #                            /generate
 # ==================================================================
 @generate_router.post("/", status_code=202)
-async def generate(req: Request):
-    body = await req.json()
-    return JSONResponse({"received": body})
+async def generate(req: BackendGenerationRequest):
+    # Создаём задачу
+    task = task_manager.create(req)
+    task.backend_callback = req.callbackUrl
+    task.backend_user_id = req.userId
+    task.backend_request_id = req.requestId
 
-    # # Создаём задачу
-    # task = task_manager.create(req)
-    # task.backend_callback = req.callbackUrl
-    # task.backend_user_id = req.userId
-    # task.backend_request_id = req.requestId
-    #
-    # # --- generate categories ---
-    # recs = embedding_service.get_recommendations(
-    #     req.books, similar_top=10, novel_top=10, genre_top=10
-    # )
-    #
-    # # --- build combined list ---
-    # combined = []
-    # seen = set()
-    #
-    # def add_list(lst):
-    #     for b in lst:
-    #         key = (b.get("title", "").lower(), b.get("author", "").lower())
-    #         if key not in seen:
-    #             seen.add(key)
-    #             combined.append(b)
-    #
-    # add_list(recs.get("similar", []))
-    # add_list(recs.get("novel", []))
-    # add_list(recs.get("genre_similar", []))
-    #
-    # # task.result must remain a list of dicts
-    # task.result = combined
-    #
-    # # --- find a free validation client ---
-    # client = client_manager.get_best_client()
-    #
-    # # ---------------------------------------------------------------
-    # # NO CLIENT → immediate callback
-    # # ---------------------------------------------------------------
-    # if not client:
-    #     try:
-    #         await _callback(req.callbackUrl, req.userId, combined)
-    #     except Exception as e:
-    #         print("Callback error:", e)
-    #
-    #     task_manager.complete(task.task_id, task.result)
-    #     return JSONResponse(
-    #         status_code=200,
-    #         content={
-    #             "status": "done_without_validation",
-    #             "task": task.task_id
-    #         }
-    #     )
-    #
-    # # ---------------------------------------------------------------
-    # # CLIENT EXISTS → send validation request
-    # # ---------------------------------------------------------------
-    # client.busy = True
-    # client_manager.store.register(client.client_id, client)
-    #
-    # try:
-    #     # validation must use only book list
-    #     books_for_validation = [Book(**b) for b in combined]
-    #     await _send_validation(client, task.task_id, books_for_validation)
-    #
-    #     task.status = "processing"
-    #     return {"status": "processing", "task": task.task_id}
-    #
-    # except Exception:
-    #     client.busy = False
-    #     client_manager.store.register(client.client_id, client)
-    #
-    #     # fallback callback
-    #     try:
-    #         await _callback(req.callbackUrl, req.userId, combined)
-    #     except Exception as e:
-    #         print("Callback error:", e)
-    #
-    #     task_manager.complete(task.task_id, task.result)
-    #     return {"status": "done_without_validation", "task": task.task_id}
+    # --- generate categories ---
+    recs = embedding_service.get_recommendations(
+        req.books, similar_top=10, novel_top=10, genre_top=10
+    )
+
+    # --- build combined list ---
+    combined = []
+    seen = set()
+
+    def add_list(lst):
+        for b in lst:
+            key = (b.get("title", "").lower(), b.get("author", "").lower())
+            if key not in seen:
+                seen.add(key)
+                combined.append(b)
+
+    add_list(recs.get("similar", []))
+    add_list(recs.get("novel", []))
+    add_list(recs.get("genre_similar", []))
+
+    # task.result must remain a list of dicts
+    task.result = combined
+
+    # --- find a free validation client ---
+    client = client_manager.get_best_client()
+
+    # ---------------------------------------------------------------
+    # NO CLIENT → immediate callback
+    # ---------------------------------------------------------------
+    if not client:
+        try:
+            await _callback(req.callbackUrl, req.userId, combined)
+        except Exception as e:
+            print("Callback error:", e)
+
+        task_manager.complete(task.task_id, task.result)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "done_without_validation",
+                "task": task.task_id
+            }
+        )
+
+    # ---------------------------------------------------------------
+    # CLIENT EXISTS → send validation request
+    # ---------------------------------------------------------------
+    client.busy = True
+    client_manager.store.register(client.client_id, client)
+
+    try:
+        # validation must use only book list
+        books_for_validation = [Book(**b) for b in combined]
+        await _send_validation(client, task.task_id, books_for_validation)
+
+        task.status = "processing"
+        return {"status": "processing", "task": task.task_id}
+
+    except Exception:
+        client.busy = False
+        client_manager.store.register(client.client_id, client)
+
+        # fallback callback
+        try:
+            await _callback(req.callbackUrl, req.userId, combined)
+        except Exception as e:
+            print("Callback error:", e)
+
+        task_manager.complete(task.task_id, task.result)
+        return {"status": "done_without_validation", "task": task.task_id}
 
 
 # ==================================================================
