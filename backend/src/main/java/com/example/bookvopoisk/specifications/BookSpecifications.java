@@ -105,4 +105,52 @@ public class BookSpecifications { // Фабрика кусочков Where, ко
       return cb.between(pages, pageFrom, pageTo);
     };
   }
+  public static Specification<Book> authorOrTitleContains(String q) {
+    return (root, cq, cb) -> {
+      if (q == null || q.isBlank()) return null;
+
+      String needle = q.toLowerCase().trim();
+
+      Expression<String> title  = cb.lower(root.get("title"));
+      Expression<String> author = cb.lower(root.get("author"));
+
+      String start = needle + "%";
+      String end   = "%" + needle;
+      String any   = "%" + needle + "%";
+
+      // где вообще есть вхождение
+      var inAuthor = cb.like(author, any);
+      var inTitle  = cb.like(title, any);
+      Predicate where = cb.or(inAuthor, inTitle);
+
+      Expression<Integer> rank =
+        cb.selectCase()
+          .when(cb.like(author, start), 0)
+          .when(cb.like(author, any), 1)
+          .when(cb.like(title, start), 2)
+          .when(
+            cb.and(
+              cb.like(title, any),
+              cb.notLike(title, start),
+              cb.notLike(title, end)
+            ), 3)
+          .when(cb.like(title, end), 4)
+          .otherwise(5)
+          .as(Integer.class);
+
+      Expression<Integer> posAuthor = cb.locate(author, needle);
+      Expression<Integer> posTitle  = cb.locate(title,  needle);
+
+      cq.orderBy(
+        cb.asc(rank),
+        cb.asc(posAuthor),
+        cb.asc(posTitle),
+        cb.asc(author),
+        cb.asc(title)
+      );
+
+      return where;
+    };
+  }
+
 }

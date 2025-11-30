@@ -1,10 +1,11 @@
 // src/app/router.tsx
 import { createBrowserRouter } from "react-router-dom";
 
-import { BookPage, CatalogPage, HomePage, TmaHomePage } from "@/pages";
+import { BookPage, CatalogPage, HomePage } from "@/pages";
 import { TmaLayout, WebLayout } from "./layouts";
 import { AuthDonePage } from "@/pages/auth/ui/AuthDonePage";
 import { ProfilePage } from "@/pages/profile/ui/ProfilePage";
+import { FavoritesPage } from "@/pages/favorites/ui/FavoritesPage";
 
 export const AppRouter = createBrowserRouter(
   [
@@ -18,16 +19,18 @@ export const AppRouter = createBrowserRouter(
         { path: "catalog", element: <CatalogPage /> },
         { path: "book/:id", element: <BookPage /> },
         { path: "profile", element: <ProfilePage /> },
+        { path: "favorites", element: <FavoritesPage /> },
       ],
     },
     {
       path: "/tma",
       element: <TmaLayout />,
       children: [
-        { index: true, element: <TmaHomePage /> },
+        { index: true, element: <HomePage /> },
         { path: "catalog", element: <CatalogPage /> }, // => /tma/catalog
         { path: "book/:id", element: <BookPage /> }, // => /tma/book/:id
         { path: "profile", element: <ProfilePage /> },
+        { path: "favorites", element: <FavoritesPage /> },
       ],
     },
   ],

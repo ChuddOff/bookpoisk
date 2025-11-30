@@ -61,9 +61,9 @@ export function BookRowCard({ book, showX, className }: Props) {
           </div>
         </div>
 
-        {book.genre && (
+        {book.genres && (
           <div className=" lex flex-wrap gap-1">
-            {book.genre.map((g) => (
+            {book.genres.map((g) => (
               <span
                 key={g}
                 className="rounded-full border border-line bg-white px-2 py-0.5 text-[11px] text-slate-700"

@@ -43,9 +43,9 @@ export function BookCard({ book }: Props) {
 
       <CardContent className="mt-auto select-none px-3 pb-3 pt-0">
         <div className="mt-auto flex flex-col items-start gap-6">
-          {book.genre ? (
+          {book.genres ? (
             <div className="flex flex-col gap-2">
-              {book.genre.map((genre, i) => (
+              {book.genres.map((genre, i) => (
                 <Badge
                   variant="secondary"
                   className="line-clamp-1 w-fit text-[11px]"

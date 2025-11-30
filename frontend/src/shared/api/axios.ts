@@ -51,7 +51,6 @@ async function doRefresh(): Promise<string> {
   // authService.refresh сам должен добавить Bearer <refresh> (обычно из session)
   // Чтобы не зациклиться — даём "голый" axios:
   // @ts-ignore поддержка возможной сигнатуры refresh(client?: AxiosInstance)
-  console.log(1);
   const resp = await (authService.refresh?.length
     ? authService.refresh()
     : authService.refresh());
