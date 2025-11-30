@@ -95,6 +95,7 @@ export function FavoritesPage() {
               Не удалось сгенерировать рекомендации.
               <span className="text-slate-500">Проверьте подключение.</span>
             </div>
+
             <Button size="sm" className="ml-auto" onClick={() => trigger()}>
               Повторить
             </Button>
