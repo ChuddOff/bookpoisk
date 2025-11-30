@@ -25,12 +25,6 @@ export interface OkResponseDto {
   message?: string;
 }
 
-export interface GenresResponseDto {
-  requestId: string;
-  status: "PENDING" | "READY" | "FAILED";
-  data: BookEntity[][];
-}
-
 export type GenresDto =
   | Array<BookEntity["genres"]>
   | {
