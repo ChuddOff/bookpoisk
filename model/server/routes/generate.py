@@ -4,7 +4,7 @@ import os
 from typing import Optional, List
 
 import httpx
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 from model.server.core import verify_api_key, task_manager, client_manager
 from model.server.models import BackendGenerationRequest, Book
 from model.server.core import embedding_service
@@ -82,10 +82,10 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
 #                            /generate
 # ==================================================================
 @generate_router.post("/", status_code=202)
-async def generate(req: BackendGenerationRequest, api_key: str = Depends(verify_api_key)):
+async def generate(req: Request, api_key: str = Depends(verify_api_key)):
     try:
         logger.info("\n=== 🔥 RAW BACKEND REQUEST RECEIVED ===")
-        logger.info(req.model_dump_json(indent=2))
+        logger.info(req)
     except Exception:
         logger.info("Failed to print req")
 
