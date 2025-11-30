@@ -43,11 +43,11 @@ class DBBookRepository(BookRepository):
         cur = self.conn.cursor()
         try:
             cur.execute("""
-                SELECT b.id, b.title, b.author, b.year, b.description,
+                SELECT b.id, b.title, b.author, b.year, b.description, b.cover, b.pages,
                        COALESCE(array_agg(g.genre) FILTER (WHERE g.genre IS NOT NULL), '{}') AS genres
                 FROM books b
                 LEFT JOIN book_genres g ON g.book_id = b.id
-                GROUP BY b.id, b.title, b.author, b.year, b.description;
+                GROUP BY b.id, b.title, b.author, b.year, b.description, b.cover, b.pages;
             """)
             rows = cur.fetchall()
         finally:
@@ -61,7 +61,9 @@ class DBBookRepository(BookRepository):
                 "author": r[2],
                 "year": r[3],
                 "description": r[4],
-                "genres": list(dict.fromkeys(r[5])) if r[5] else []
+                "cover": r[5],
+                "pages": r[6],
+                "genres": list(dict.fromkeys(r[7])) if r[7] else []
             })
         return books
 

@@ -202,7 +202,7 @@ class EmbeddingService:
                         break
 
         def clean(d):
-            return {"title": d.get("title"), "author": d.get("author"), "year": d.get("year"), "description": d.get("description")}
+            return {"id": d.get("id"), "title": d.get("title"), "author": d.get("author"), "genre": d.get("genre"), "year": d.get("year"), "description": d.get("description"), "cover": d.get("cover"), "pages": d.get("pages")}
 
         return {
             "similar": [clean(b) for b in similar_list],
