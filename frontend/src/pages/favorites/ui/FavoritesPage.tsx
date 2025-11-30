@@ -52,30 +52,29 @@ export function FavoritesPage() {
       {!!ganres.length && (
         <div className="flex items-center justify-between">
           <div className="space-y-10">
-            <SectionFeed key={0} books={ganres.slice(0, 8)} title={"Похожее"} />
-            <SectionFeed
-              key={1}
-              books={ganres.slice(8, 16)}
-              title={"Что-то новое"}
-            />
-            <SectionFeed
-              key={2}
-              books={ganres.slice(16, 24)}
-              title={"Выбор редакции"}
-            />
-            <Button
-              variant="outline"
-              onClick={handleGenerate}
-              disabled={isMutatingCurrent || isMutating}
-              className="flex items-center gap-3"
-            >
-              {isMutatingCurrent || isMutating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
-              Сгенерировать рекомендации повторно
-            </Button>
+            {!!ganres.slice(0, 8).length && (
+              <SectionFeed
+                key={0}
+                books={ganres.slice(0, 8)}
+                title={"Похожее"}
+              />
+            )}
+            {!!ganres.slice(8, 16).length && (
+              <SectionFeed
+                key={1}
+                books={ganres.slice(8, 16)}
+                title={"Похожее"}
+              />
+            )}
+            {!!ganres.slice(16, 24).length && (
+              <SectionFeed
+                key={2}
+                books={ganres.slice(16, 24)}
+                title={"Похожее"}
+              />
+            )}
           </div>
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex justify-center mx-auto">
             <Button
               variant="outline"
               onClick={handleGenerate}
