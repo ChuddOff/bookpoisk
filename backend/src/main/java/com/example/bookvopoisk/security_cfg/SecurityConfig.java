@@ -50,7 +50,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
-        .requestMatchers(HttpMethod.POST, "/lm/callback/**").permitAll()
+        .requestMatchers(HttpMethod.POST, "/lm/**").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())
