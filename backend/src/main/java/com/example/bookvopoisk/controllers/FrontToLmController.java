@@ -4,8 +4,9 @@ import com.example.bookvopoisk.DTO.FavouriteBookDto;
 import com.example.bookvopoisk.DTO.LmCallbackPayload;
 import com.example.bookvopoisk.Service.FavoriteService;
 import com.example.bookvopoisk.Service.LmPushService;
-import com.example.bookvopoisk.models.RecommendationStore;
 import com.example.bookvopoisk.googleRegistration.JwtUtil;
+import com.example.bookvopoisk.models.LmInMemoryStore;
+import com.example.bookvopoisk.models.RecommendationStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -22,6 +23,7 @@ public class FrontToLmController {
   private final FavoriteService favoriteService;
   private final LmPushService lmPushService;
   private final RecommendationStore store;
+  private final LmInMemoryStore inMemoryStore;
   private final JwtUtil jwtUtil;
 
   @Value("${lm.webhook-secret:}")
@@ -60,7 +62,7 @@ public class FrontToLmController {
   /** Шаг 2: фронт опрашивает результат по requestId */
   @PostMapping("/booksForMe/result/{requestId}")
   public ResponseEntity<?> pollBooksForMe(@PathVariable UUID requestId) {
-    return store.load(requestId)
+    return inMemoryStore.load(requestId)
       .<ResponseEntity<?>>map(ResponseEntity::ok)
       .orElseGet(() -> ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(Map.of("status", "PENDING", "requestId", requestId)));
@@ -81,12 +83,17 @@ public class FrontToLmController {
     }
 
     UUID userId = payload.userId();
+
+    // 1) Пишем в БД плоский список — ЛОГ/аналитика, ничего не меняем
     List<FavouriteBookDto> flat = payload.recommendations().stream()
       .filter(Objects::nonNull)
       .flatMap(List::stream)
       .toList();
-
     store.save(requestId, userId, flat);
+
+    // 2) В оперативную память кладём исходный nested List<List<FavouriteBookDto>>
+    inMemoryStore.save(requestId, payload.recommendations());
+
     return ResponseEntity.noContent().build();
   }
 
