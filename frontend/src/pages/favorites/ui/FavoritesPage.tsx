@@ -63,19 +63,8 @@ export function FavoritesPage() {
               books={ganres.slice(16, 24)}
               title={"Выбор редакции"}
             />
-            <Button
-              variant="outline"
-              onClick={handleGenerate}
-              disabled={isMutatingCurrent || isMutating}
-              className="flex items-center gap-3"
-            >
-              {isMutatingCurrent || isMutating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
-              Сгенерировать рекомендации повторно
-            </Button>
           </div>
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex justify-center mx-auto">
             <Button
               variant="outline"
               onClick={handleGenerate}
