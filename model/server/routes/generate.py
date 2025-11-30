@@ -56,13 +56,8 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
         "recommendations": recommendations  # already list of dicts
     }
 
-    headers = {}
-    secret = os.getenv("LM_WEBHOOK_SECRET") or os.getenv("X_LM_SECRET")
-    if secret:
-        headers["X-LM-Secret"] = secret
-
     async with httpx.AsyncClient() as c:
-        await c.post(callback_url, json=payload, headers=headers, timeout=15.0)
+        await c.post(callback_url, json=payload, timeout=15.0)
 
 
 # ==================================================================
