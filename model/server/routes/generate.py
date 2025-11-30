@@ -82,20 +82,8 @@ async def _callback(callback_url: str, user_id: str, recommendations: List[dict]
 #                            /generate
 # ==================================================================
 @generate_router.post("/", status_code=202)
-async def generate(req: Request, api_key: str = Depends(verify_api_key)):
-    raw = await req.body()
-    forward_url = os.getenv("PROXY")
-
-    async with httpx.AsyncClient() as c:
-        resp = await c.post(forward_url, json=raw, headers={"Content-Type": req.headers.get("content-type", "application/json")})
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "done_without_validation",
-            "task": "111"
-        }
-    )
+async def generate(req: BackendGenerationRequest, api_key: str = Depends(verify_api_key)):
+    print("RAW REQUEST:", req)
 
     # Создаём задачу
     task = task_manager.create(req)
