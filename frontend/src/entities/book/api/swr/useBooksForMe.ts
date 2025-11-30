@@ -1,13 +1,23 @@
-import useSWR, { type BareFetcher, type SWRConfiguration } from "swr";
 import { bookService } from "../book.service";
 import { ENDPOINT } from "@/shared";
-import type { LikedBooks } from "../../model/dto";
+import useSWRMutation, { type SWRMutationConfiguration } from "swr/mutation";
+import type { Key } from "swr";
 
-export function useLikedBooksMe(
-  config?:
-    | SWRConfiguration<LikedBooks, any, BareFetcher<LikedBooks>>
+export function useBooksForMe(
+  options?:
+    | (SWRMutationConfiguration<
+        { poll: string },
+        any,
+        Key,
+        never,
+        { poll: string }
+      > & { throwOnError?: boolean })
     | undefined
 ) {
-  const key = ENDPOINT.likedBooks;
-  return useSWR<LikedBooks>(key, () => bookService.likedBooks(), config);
+  const key = ENDPOINT.bookForMe;
+  return useSWRMutation<{ poll: string }>(
+    key,
+    bookService.postBooksForMe,
+    options
+  );
 }

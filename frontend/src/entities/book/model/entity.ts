@@ -15,7 +15,7 @@ export interface BookEntity {
   /** Краткое описание/аннотация. */
   description: string;
   /** Жанр книги. */
-  genre: string[];
+  genres: string[];
   /** Ссылка на обложку, если доступна. */
   cover?: string;
   /** Дополнительные фотографии книги. */

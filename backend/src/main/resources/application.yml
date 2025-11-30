@@ -46,3 +46,6 @@ app:
     jwt:
       secret: ${APP_JWT_SECRET}     # длинный случайный ключ (HS256)
       access-ttl-seconds: 3600
+lm:
+  url: ${LM_URL}
+  ingest-path: ${LM_INGEST_PATH}
