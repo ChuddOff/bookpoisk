@@ -74,7 +74,6 @@ public class FrontToLmController {
     @RequestHeader(name = "X-LM-Secret", required = false) String secret,
     @RequestBody LmCallbackPayload payload
   ) {
-    System.out.println("### lmCallback hit for requestId=" + requestId);
     if (webhookSecret != null && !webhookSecret.isBlank()) {
       if (secret == null || !webhookSecret.equals(secret)) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -82,9 +81,12 @@ public class FrontToLmController {
     }
 
     UUID userId = payload.userId();
-    List<FavouriteBookDto> recommended = payload.recommendations();
+    List<FavouriteBookDto> flat = payload.recommendations().stream()
+      .filter(Objects::nonNull)
+      .flatMap(List::stream)
+      .toList();
 
-    store.save(requestId, userId, recommended);
+    store.save(requestId, userId, flat);
     return ResponseEntity.noContent().build();
   }
 

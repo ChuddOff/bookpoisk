@@ -5,5 +5,6 @@ import java.util.UUID;
 
 public record LmCallbackPayload(
   UUID userId,
-  List<FavouriteBookDto> recommendations)
+  List<List<FavouriteBookDto>> recommendations
+)
 {}
