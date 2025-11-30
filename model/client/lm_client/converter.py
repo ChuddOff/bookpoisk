@@ -3,12 +3,11 @@ from openai.types.chat import ChatCompletion
 from client.database import fill_book_from_db
 
 
-def convert_answer(response: ChatCompletion, unsuitable_books: list) -> list:
+def convert_answer(response: ChatCompletion, unsuitable_books: list, read_books: list, result: list):
     from . import try_fix_json, validate_book_entry
 
     raw = response.choices[0].message.content
     data = try_fix_json(raw)
-    books = []
 
     if not data:
         raise ValueError("Model returned invalid response")
@@ -28,10 +27,12 @@ def convert_answer(response: ChatCompletion, unsuitable_books: list) -> list:
 
         book = fill_book_from_db(**b)
 
-        if not book:
+        if not book or book in read_books:
             unsuitable_books.append(b)
             continue
 
-        books.append(book)
+        if book in read_books or book in result or b in unsuitable_books:
+            unsuitable_books.append(b)
+            continue
 
-    return books
+        result.append(book)

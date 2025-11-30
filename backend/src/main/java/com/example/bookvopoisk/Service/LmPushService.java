@@ -2,7 +2,6 @@ package com.example.bookvopoisk.Service;
 
 import com.example.bookvopoisk.DTO.FavouriteBookDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;

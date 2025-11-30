@@ -22,8 +22,9 @@ class MemoryClientStore(BaseClientStore):
 
     def register(self, client_id: str, client: Client) -> Optional[Client]:
         client.last_update = datetime.now(timezone.utc).isoformat()
+        # храним dict, не pydantic объект
         self.clients[client_id] = client.model_dump()
-        return self.get(client_id)
+        return Client(**self.clients[client_id])
 
     def get(self, client_id: str) -> Optional[Client]:
         raw = self.clients.get(client_id)
@@ -71,12 +72,15 @@ class RedisClientStore(BaseClientStore):
 
     def all(self) -> List[Client]:
         result = []
-
         for key in self.redis.scan_iter("client:*"):
-            data = json.loads(self.redis.get(key))
-            data["client_id"] = key.lstrip("client:")
+            raw = self.redis.get(key)
+            if not raw:
+                continue
+            data = json.loads(raw)
+            # key looks like client:<id>
+            client_id = key.split(":", 1)[1]
+            data["client_id"] = client_id
             result.append(Client(**data))
-
         return result
 
     def delete(self, client_id: str) -> Optional[Client]:

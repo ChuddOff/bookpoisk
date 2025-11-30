@@ -1,94 +1,221 @@
+import json
+import logging
 import os
+from typing import Optional, List
 
 import httpx
-from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, Header
-from fastapi.responses import Response
-from fastapi.params import Depends
+from fastapi import APIRouter, Depends, Header
+from model.server.core import verify_api_key, task_manager, client_manager
+from model.server.models import BackendGenerationRequest, Book
+from model.server.core import embedding_service
+from pydantic import BaseModel
 from starlette.responses import JSONResponse
+import logging
 
-from model.server.core import verify_api_key, task_manager, BACKEND_URL, client_manager
-from model.server.models import GenerationRequest, GenerationResultRequest
-
-load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("server")
 
 generate_router = APIRouter(prefix="/generate", tags=["Generation"])
 
+log = logging.getLogger("generate")
 
-@generate_router.post("/", status_code=201)
-async def generate(req: GenerationRequest) -> JSONResponse:
-    # проверяем, есть ли клиенты вообще
-    if len(client_manager.get_all_clients()) < 1:
-        raise HTTPException(status_code=404, detail="No clients found")
 
-    # создаём задачу в любом случае (чтобы был task_id)
-    task_loc = task_manager.create(req)
+class ValidationResult(BaseModel):
+    task_id: str
+    ok: bool
+    invalid: Optional[List[Book]] = None
 
-    # выбираем лучший свободный клиент
+
+# ----------------------------------------------------------
+# SEND VALIDATION TO CLIENT
+# ----------------------------------------------------------
+async def _send_validation(client, task_id: str, candidates: List[Book]):
+    payload = {
+        "task_id": task_id,
+        "candidates": [b.model_dump() for b in candidates]
+    }
+
+    async with httpx.AsyncClient() as c:
+        await c.post(
+            f"{client.address.rstrip('/')}/validate/",
+            json=payload,
+            headers={"x-api-key": os.getenv("CLIENT_SECRET")},
+            timeout=20.0
+        )
+
+
+# ----------------------------------------------------------
+# FINAL CALLBACK TO BACKEND
+# ----------------------------------------------------------
+async def _callback(callback_url: str, user_id: str, recommendations: List[List[dict]]):
+    """
+    recommendations MUST be a flat list of dicts. Never categories!
+    """
+    payload = {
+        "userId": user_id,
+        "recommendations": recommendations  # already list of dicts
+    }
+
+    async with httpx.AsyncClient() as c:
+        await c.post(callback_url, json=payload, timeout=15.0)
+
+
+# ==================================================================
+#                            /generate
+# ==================================================================
+@generate_router.post("/", status_code=202)
+async def generate(req: BackendGenerationRequest):
+    # Создаём задачу
+    task = task_manager.create(req)
+    task.backend_callback = req.callbackUrl
+    task.backend_user_id = req.userId
+    task.backend_request_id = req.requestId
+
+    # --- generate categories ---
+    recs = embedding_service.get_recommendations(
+        req.books, similar_top=8, novel_top=8, genre_top=8
+    )
+
+    # --- build combined list ---
+    combined = []
+    seen = set()
+
+    def add_list(lst):
+        ls = []
+
+        for b in lst:
+            key = (b.get("title", "").lower(), b.get("author", "").lower())
+            if key not in seen:
+                seen.add(key)
+                ls.append(b)
+
+        combined.append(ls)
+
+    add_list(recs.get("similar", []))
+    add_list(recs.get("novel", []))
+    add_list(recs.get("genre_similar", []))
+
+    # task.result must remain a list of dicts
+    task.result = combined
+
+    # --- find a free validation client ---
     client = client_manager.get_best_client()
-    if client is None:
-        # нет свободных клиентов — возвращаем task_id и статус queued
-        return JSONResponse(status_code=202, content={"task": task_loc.task_id, "status": "queued"})
 
-    # пометим клиента как занятого и сохраним
+    # ---------------------------------------------------------------
+    # NO CLIENT → immediate callback
+    # ---------------------------------------------------------------
+    if not client:
+        try:
+            await _callback(req.callbackUrl, req.userId, combined)
+        except Exception as e:
+            print("Callback error:", e)
+
+        task_manager.complete(task.task_id, task.result)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "done_without_validation",
+                "task": task.task_id
+            }
+        )
+
+    # ---------------------------------------------------------------
+    # CLIENT EXISTS → send validation request
+    # ---------------------------------------------------------------
     client.busy = True
     client_manager.store.register(client.client_id, client)
 
-    # формируем минимальную полезную нагрузку для клиента
-    payload = {
-        "task_id": task_loc.task_id,
-        "request": task_loc.request.model_dump()
-    }
-
     try:
-        async with httpx.AsyncClient() as c:
-            resp = await c.post(f"{client.address}/generate/", json=payload, headers={"x-api-key": os.getenv("CLIENT_SECRET")}, timeout=20.0)
+        # validation must use only book list
+        books_for_validation = [Book(**b) for b in combined]
+        await _send_validation(client, task.task_id, books_for_validation)
 
-        # если клиент ответил с ошибкой — откат
-        if resp.status_code >= 400:
-            client.busy = False
-            client_manager.store.register(client.client_id, client)
-            task_loc.status = "failed"
-            return JSONResponse(status_code=502, content={"error": "client returned error", "status_code": resp.status_code})
+        task.status = "processing"
+        return {"status": "processing", "task": task.task_id}
 
-    except Exception as exc:
-        # откатываем busy и помечаем задачу как failed
+    except Exception:
         client.busy = False
         client_manager.store.register(client.client_id, client)
-        task_loc.status = "failed"
-        # логирование exc
-        return JSONResponse(status_code=502, content={"error": "failed to send task to client", "details": str(exc)})
 
-    # всё ОК — вернём task_id клиенту (и 201 Created)
-    return JSONResponse(status_code=201, content={"task": task_loc.task_id})
+        # fallback callback
+        try:
+            await _callback(req.callbackUrl, req.userId, combined)
+        except Exception as e:
+            print("Callback error:", e)
 
-@generate_router.get("/status", status_code=200)
-async def status(task_id: str) -> JSONResponse:
-    task_loc = task_manager.get(task_id)
-    if not task_loc:
-        return JSONResponse(status_code=404, content={"error": "task not found"})
-    return JSONResponse(status_code=200, content={"task": task_loc.model_dump()})
+        task_manager.complete(task.task_id, task.result)
+        return {"status": "done_without_validation", "task": task.task_id}
 
+
+# ==================================================================
+#                     /generate/result  (валидация)
+# ==================================================================
 @generate_router.post("/result", status_code=200)
-async def result(req: GenerationResultRequest, api_key: str = Depends(verify_api_key), client_id: str | None = Header(None)):
-    # Сохраняем только результат (req.result), а не entire model_dump
-    ok = task_manager.complete(req.task_id, req.result)
-    if not ok:
-        return JSONResponse(status_code=404, content={"error": "task not found"})
+async def validation(
+        req: ValidationResult,
+        api_key: str = Depends(verify_api_key),
+        client_id: Optional[str] = Header(None)
+):
+    task = task_manager.get(req.task_id)
+    if not task:
+        return {"error": "not found"}
 
-    # если клиент прислал id — пометим его свободным
+    # free client
     if client_id:
         client = client_manager.store.get(client_id)
         if client:
             client.busy = False
             client_manager.store.register(client_id, client)
 
-    # пересылаем результат на BACKEND_URL (если нужно)
-    try:
-        async with httpx.AsyncClient() as client_sess:
-            await client_sess.post(BACKEND_URL, json={"task_id": req.task_id, "result": req.result, "generated_at": req.generated_at}, timeout=10.0)
-    except Exception:
-        # логируем, но не падаем
-        pass
+    # ---------------------------------------------------------------
+    # OK → final callback
+    # ---------------------------------------------------------------
+    if req.ok:
+        try:
+            await _callback(task.backend_callback, task.backend_user_id, task.result)
+        except Exception as e:
+            print("Callback error:", e)
 
-    return JSONResponse(status_code=200, content={"task": req.task_id})
+        task_manager.complete(task.task_id, task.result)
+        return {"status": "ok"}
+
+    # ---------------------------------------------------------------
+    # NOT OK → retry with new candidates
+    # ---------------------------------------------------------------
+    invalid_books = [Book(**b) if isinstance(b, dict) else b for b in (req.invalid or [])]
+    original = task.request.books
+
+    new_candidates = embedding_service.get_similar(original, exclude=invalid_books, count=20)
+    task.result = [c.model_dump() for c in new_candidates]
+
+    next_client = client_manager.get_best_client()
+
+    # no client → callback immediately
+    if not next_client:
+        try:
+            await _callback(task.backend_callback, task.backend_user_id, task.result)
+        except Exception as e:
+            print("Callback error:", e)
+
+        task_manager.complete(task.task_id, task.result)
+        return {"status": "done_without_validation"}
+
+    # retry
+    next_client.busy = True
+    client_manager.store.register(next_client.client_id, next_client)
+
+    try:
+        await _send_validation(next_client, task.task_id, new_candidates)
+        return {"status": "retrying"}
+
+    except Exception:
+        next_client.busy = False
+        client_manager.store.register(next_client.client_id, next_client)
+
+        try:
+            await _callback(task.backend_callback, task.backend_user_id, task.result)
+        except Exception as e:
+            print("Callback error:", e)
+
+        task_manager.complete(task.task_id, task.result)
+        return {"status": "done_without_validation"}

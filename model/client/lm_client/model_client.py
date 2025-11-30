@@ -38,8 +38,6 @@ async def model_generate(req: Task):
     res = []
 
     for attempt in range(5):
-        print(unsuitable)
-        print(res)
         try:
             similar = embedding_manager.top_similar(req.request.books)
 
@@ -50,7 +48,7 @@ async def model_generate(req: Task):
                 if not validate_answer(response):
                     raise Exception("Failed to generate model")
 
-                res.extend(await asyncio.to_thread(convert_answer, response, unsuitable))
+                await asyncio.to_thread(convert_answer, response, unsuitable, req.request.books, res)
 
             except Exception as e:
                 if attempt < 5:

@@ -50,6 +50,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/", "/books/**", "/book/**", "/genres/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
         .requestMatchers("/login**", "/oauth2/**").permitAll()
+        .requestMatchers(HttpMethod.POST, "/lm/**").permitAll()
         .anyRequest().authenticated()
       )
       .httpBasic(b -> b.disable())
@@ -100,4 +101,4 @@ public class SecurityConfig {
   }
 }
 // Bearer — это тип схемы в заголовке Authorization HTTP, означающий: «у кого есть этот токен (кто его несёт), тот и считается авторизованным».
-// надеюсь fix
+

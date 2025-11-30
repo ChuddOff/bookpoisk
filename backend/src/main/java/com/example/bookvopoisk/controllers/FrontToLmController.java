@@ -1,6 +1,7 @@
 package com.example.bookvopoisk.controllers;
 
 import com.example.bookvopoisk.DTO.FavouriteBookDto;
+import com.example.bookvopoisk.DTO.LmCallbackPayload;
 import com.example.bookvopoisk.Service.FavoriteService;
 import com.example.bookvopoisk.Service.LmPushService;
 import com.example.bookvopoisk.models.RecommendationStore;
@@ -44,10 +45,8 @@ public class FrontToLmController {
       .buildAndExpand(requestId)
       .toUriString();
 
-    // отправляем задачу в LM (асинхронно)
     lmPushService.requestAsync(userId, favorites, callbackUrl, requestId);
 
-    // 202 Accepted + метаданные для опроса
     Map<String, Object> body = Map.of(
       "requestId", requestId,
       "poll", ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -57,34 +56,41 @@ public class FrontToLmController {
     return ResponseEntity.accepted().body(body);
   }
 
+
   /** Шаг 2: фронт опрашивает результат по requestId */
-  @GetMapping("/booksForMe/result/{requestId}")
+  @PostMapping("/booksForMe/result/{requestId}")
   public ResponseEntity<?> pollBooksForMe(@PathVariable UUID requestId) {
-    return store.take(requestId)
+    return store.load(requestId)
       .<ResponseEntity<?>>map(ResponseEntity::ok)
       .orElseGet(() -> ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(Map.of("status", "PENDING", "requestId", requestId)));
   }
+
 
   /** Шаг 3: коллбэк от LM с готовыми рекомендованными книгами */
   @PostMapping("/lm/callback/{requestId}")
   public ResponseEntity<Void> lmCallback(
     @PathVariable UUID requestId,
     @RequestHeader(name = "X-LM-Secret", required = false) String secret,
-    @RequestBody List<FavouriteBookDto> recommended // если LM шлёт массив DTO
+    @RequestBody LmCallbackPayload payload
   ) {
-    // простая проверка секрета вебхука
     if (webhookSecret != null && !webhookSecret.isBlank()) {
       if (secret == null || !webhookSecret.equals(secret)) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
       }
     }
 
-    store.save(requestId, recommended);
+    UUID userId = payload.userId();
+    List<FavouriteBookDto> flat = payload.recommendations().stream()
+      .filter(Objects::nonNull)
+      .flatMap(List::stream)
+      .toList();
+
+    store.save(requestId, userId, flat);
     return ResponseEntity.noContent().build();
   }
 
-  // --- утилита извлечения userId ---
+
   private UUID extractUserId(Authentication auth, String authHdr) {
     if (auth != null && auth.getName() != null && !auth.getName().isBlank()) {
       try { return UUID.fromString(auth.getName()); } catch (IllegalArgumentException ignored) {}
