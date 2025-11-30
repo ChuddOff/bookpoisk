@@ -4,7 +4,7 @@ import os
 from typing import Optional, List
 
 import httpx
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header
 from model.server.core import verify_api_key, task_manager, client_manager
 from model.server.models import BackendGenerationRequest, Book
 from model.server.core import embedding_service
