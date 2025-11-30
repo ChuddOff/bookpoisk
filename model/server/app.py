@@ -6,8 +6,6 @@ import aiohttp
 import uvicorn
 from fastapi import FastAPI
 
-from model.server.core import BACKEND_URL
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from routes import client_router, generate_router, health_router
@@ -23,7 +21,7 @@ async def health_endpoint():
     while True:
         try:
             async with aiohttp.ClientSession() as session:
-                await session.get(BACKEND_URL)
+                await session.get(os.getenv("BACKEND_URL"))
         except Exception:
             pass
 
